@@ -1,0 +1,75 @@
+{
+	"compiler": {
+		"version": "0.8.20+commit.a1b79de6"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "len_",
+						"type": "uint256"
+					}
+				],
+				"name": "getUser",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "parent1",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "parent2",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/practice.sol": "practice"
+		},
+		"evmVersion": "shanghai",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/practice.sol": {
+			"keccak256": "0xf3761ac2e8e37c62b09d3d13b610c6f44812b6b6cb8454447e18ee1e2553d382",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://b0e64598ced10af2387a82e9050d4f97c51d3ee0bd7d906a6bdaa2bef894b715",
+				"dweb:/ipfs/Qme61LRPmWfFf39fcJaWWxgV6n4SwDwVQ6nKUmj9ZGYU62"
+			]
+		}
+	},
+	"version": 1
+}

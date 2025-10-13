@@ -1,98 +1,168 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import "../core/Ownable.sol";
 
-contract CompanyMatrix is Ownable {
+/**
+ * @title CompanyMultiMatrixConstants
+ * @dev 3× company-wide matrices (5 levels) with constant reward percentages
+ * Author: Rahul + GPT-5 team
+ */
+contract CompanyMultiMatrixConstants {
+    uint8 public constant MAX_CHILDREN = 3;
+    uint32 public constant START_ID = 1000;
 
-    uint public constant MAX_CHILDREN = 3;
+    // === CONFIGURATION ===
+
+    // Fixed matrix entry prices (in wei)
+    //uint256[5] public constant MATRIX_PRICES = [100e18,200e18, 500e18,1000e18,2000e18];
+      uint256[5] public immutable MATRIX_PRICES;
+
+    // Reward percentages (in whole numbers)
+    // [Level1, Level2, Level3, Company]
+    uint8[4] public immutable REWARD_PCT = [40, 30, 20, 10];
+
+    // === DATA STRUCTURES ===
 
     struct User {
-        uint id;
-        address userAddress;
-        uint parentId; // who placed above them
-        uint[] children;
+        uint32 id;                // user ID starting from 1000
+        address userAddress;      // wallet address
+        uint32 parentId;          // parent ID (also starts from 1000)
+        uint32[] children;        // list of child IDs
     }
 
-    // For 5 different matrix levels
-    mapping(uint => mapping(uint => User)) public matrixUsers; // matrixId => userId => User
-    mapping(uint => uint) public lastUserId; // matrixId => lastUserId
-    mapping(uint => uint[]) public matrixQueue; // matrixId => queue of parentIds   
-    mapping(uint => mapping(uint => uint[])) public UsersIds; // matrixId => userId (main user id) => matrixid (id alloted to user in matrix
+    // matrixId => array of users (index 0 = company root)
+    mapping(uint8 => User[]) public matrices;
 
-    uint256[] public matrixPrices = [75e18, 300e18, 1200e18, 4800e18, 19200e18, 76800e18, 307200e18];
+    // === EVENTS ===
 
-    event UserPlaced(address indexed user, uint indexed matrixId, uint userId, uint parentId, uint position);
+    event UserJoined(
+        uint8 indexed matrixId,
+        uint32 indexed userId,
+        address indexed user,
+        uint32 parentId,
+        address parentAddr,
+        uint8 position
+    );
+
+    event RewardSent(address indexed to, uint256 amount, string level);
+
+    // === CONSTRUCTOR ===
 
     constructor() {
-        // Initialize root (company) for all matrices
-        for (uint i = 0; i < matrixPrices.length; i++) {
-            lastUserId[i] = 1;
 
-            User storage root = matrixUsers[i][1];
-            root.id = 1;
-            root.userAddress = msg.sender;
-            root.parentId = 0;
-
-            // Add root to queue as available parent
-            matrixQueue[i].push(1);
+           MATRIX_PRICES[0] = 100e18;
+        MATRIX_PRICES[1] = 200e18;
+        MATRIX_PRICES[2] = 500e18;
+        MATRIX_PRICES[3] = 1000e18;
+        MATRIX_PRICES[4] = 2000e18;
+        // Initialize company root for all matrices
+        for (uint8 i = 0; i < MATRIX_PRICES.length; i++) {
+            User memory root = User({
+                id: START_ID,
+                userAddress: msg.sender,
+                parentId: 0,
+                children: new uint32 
+            });
+            matrices[i].push(root);
         }
     }
 
-    function joinMatrix(uint matrixId) external payable {
-        require(matrixId < matrixPrices.length, "Invalid matrix");
-        require(msg.value == matrixPrices[matrixId], "Invalid amount");
+    // === MAIN JOIN FUNCTION ===
 
-        lastUserId[matrixId]++;
-        uint newId = lastUserId[matrixId];
+    function joinMatrix(uint8 matrixId) external payable {
+        require(matrixId < MATRIX_PRICES.length, "Invalid matrix");
+        require(msg.value == MATRIX_PRICES[matrixId], "Incorrect amount");
 
-        // Find parent from queue
-        uint parentId = _findNextAvailableParent(matrixId);
+        User[] storage users = matrices[matrixId];
+        uint256 index = users.length;               // current index for new user
+        uint32 newUserId = START_ID + uint32(index);
 
-        // Register user
-        User storage u = matrixUsers[matrixId][newId];
-        u.id = newId;
-        u.userAddress = msg.sender;
-        u.parentId = parentId;
+        // parent by formula
+        uint256 parentIndex = (index - 1) / MAX_CHILDREN;
+        User storage parent = users[parentIndex];
 
-        // Attach child
-        matrixUsers[matrixId][parentId].children.push(newId);
+        // create user
+        User memory newUser = User({
+            id: newUserId,
+            userAddress: msg.sender,
+            parentId: parent.id,
+            children: new uint32 
+        });
 
-        emit UserPlaced(msg.sender, matrixId, newId, parentId, matrixUsers[matrixId][parentId].children.length);
+        users.push(newUser);
+        users[parentIndex].children.push(newUserId);
 
-        // Add this new user to queue as potential parent
-        matrixQueue[matrixId].push(newId);
+        emit UserJoined(
+            matrixId,
+            newUserId,
+            msg.sender,
+            parent.id,
+            parent.userAddress,
+            uint8(users[parentIndex].children.length)
+        );
+
+        _distributeRewards(matrixId, parentIndex, msg.value);
     }
 
-    function _findNextAvailableParent(uint matrixId) internal returns (uint parentId) {
-        uint[] storage queue = matrixQueue[matrixId];
+    // === INTERNAL REWARD DISTRIBUTION ===
 
-        for (uint i = 0; i < queue.length; i++) {
-            uint candidate = queue[i];
-            if (matrixUsers[matrixId][candidate].children.length < MAX_CHILDREN) {
-                return candidate;
+    function _distributeRewards(uint8 matrixId, uint256 parentIndex, uint256 amount) internal {
+        User[] storage users = matrices[matrixId];
+        uint256 remaining = amount;
+
+        // Level 1
+        address level1 = users[parentIndex].userAddress;
+        uint256 lvl1Amt = (amount * REWARD_PCT[0]) / 100;
+        _safeSend(level1, lvl1Amt, "Level1");
+        remaining -= lvl1Amt;
+
+        // Level 2
+        uint256 parent2Index = _getParentIndexById(matrixId, users[parentIndex].parentId);
+        if (parent2Index < users.length) {
+            address level2 = users[parent2Index].userAddress;
+            uint256 lvl2Amt = (amount * REWARD_PCT[1]) / 100;
+            _safeSend(level2, lvl2Amt, "Level2");
+            remaining -= lvl2Amt;
+
+            // Level 3
+            uint256 parent3Index = _getParentIndexById(matrixId, users[parent2Index].parentId);
+            if (parent3Index < users.length) {
+                address level3 = users[parent3Index].userAddress;
+                uint256 lvl3Amt = (amount * REWARD_PCT[2]) / 100;
+                _safeSend(level3, lvl3Amt, "Level3");
+                remaining -= lvl3Amt;
             }
         }
 
-        revert("No available parent found");
+        // Remaining to company
+        address company = users[0].userAddress;
+        if (remaining > 0) _safeSend(company, remaining, "Company");
     }
 
-    // View helpers
-    function getUser(uint matrixId, uint userId) external view returns (
-        uint id,
-        address userAddress,
-        uint parentId,
-        uint[] memory children
-    ) {
-        User storage u = matrixUsers[matrixId][userId];
+    function _getParentIndexById(uint8 matrixId, uint32 parentId) internal view returns (uint256) {
+        if (parentId < START_ID) return type(uint256).max;
+        uint256 index = parentId - START_ID;
+        return index < matrices[matrixId].length ? index : type(uint256).max;
+    }
+
+    function _safeSend(address to, uint256 amount, string memory level) internal {
+        if (to == address(0) || amount == 0) return;
+        (bool ok, ) = payable(to).call{value: amount}("");
+        if (ok) emit RewardSent(to, amount, level);
+    }
+
+    // === VIEW HELPERS ===
+
+    function getUser(uint8 matrixId, uint256 index)
+        external
+        view
+        returns (uint32 id, address userAddr, uint32 parentId, uint32[] memory children)
+    {
+        User storage u = matrices[matrixId][index];
         return (u.id, u.userAddress, u.parentId, u.children);
     }
 
-    function getChildren(uint matrixId, uint userId) external view returns (uint[] memory) {
-        return matrixUsers[matrixId][userId].children;
-    }
-
-    function getQueue(uint matrixId) external view returns (uint[] memory) {
-        return matrixQueue[matrixId];
+    function getMatrixSize(uint8 matrixId) external view returns (uint256) {
+        return matrices[matrixId].length;
     }
 
     receive() external payable {}
