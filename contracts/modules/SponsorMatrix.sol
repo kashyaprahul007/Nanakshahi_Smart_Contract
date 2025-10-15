@@ -50,7 +50,8 @@ contract Nanakshahi {
         102400 * 1e18,  // 102400$
         204800 * 1e18   // 204800$
     ];
-
+ uint[] public poolPackages = [25e18, 100e18, 400e18, 1600e18, 6400e18, 25600e18, 102400e18];
+ uint[7] public minLevelForPool = [3, 5, 7, 9, 11, 13, 15];
         //  User struct into basic info and relationships
     struct Deposit {
         uint256 amount;
@@ -102,18 +103,20 @@ contract Nanakshahi {
         uint poolId;
         uint parentId;  
         uint bonusCount;
-        uint nextPoolAmt;       
-        uint reTopupAmt;          
+            
     }
 
-    mapping(uint =>  mapping(uint => UserPool)) public userPooldtl;
+    struct UserPoolTopup{
+         uint nextPoolAmt;       
+        uint reTopupAmt;     
+    }
+    mapping(uint =>  mapping(uint => UserPoolTopup)) public userPooltopup;
 
+    mapping(uint =>  mapping(uint => UserPool)) public userPooldtl;
     mapping(uint => mapping(uint => uint[])) public userChildren;// in each pool id wise
     mapping(uint => mapping(uint => uint[])) public userIdPerPool;// will store user ids pool wise
-
- 
-    uint[] public poolPackages = [25e18, 100e18, 400e18, 1600e18, 6400e18, 25600e18, 102400e18];
     mapping(uint => uint[]) public poolUsers; // store all users  pool wise
+    mapping(uint => mapping(uint => bool)) public userHasPool; 
 
     // === EVENTS ===
 
@@ -171,6 +174,7 @@ contract Nanakshahi {
         creator.id = defaultRefId;
         creator.level = 15; // Creator starts at max level
         creator.registrationTime = block.timestamp;
+        creator.poollevel = 7;
         
         // Set initial deposit for creator
         uint totalDeposit = 0;
@@ -186,16 +190,116 @@ contract Nanakshahi {
                 mainid: defaultRefId,
                 poolId: j,
                 parentId: 0,
-
-                bonusCount: 0,
-                nextPoolAmt: 0,
-                reTopupAmt: 0
+                bonusCount: 0
             });
             poolUsers[j].push(defaultRefId);
             userIdPerPool[j][defaultRefId].push(defaultRefId);
         }
         
     }
+
+    function canBuyNextPool(uint userId) public view returns (bool eligible, string memory reason) {
+        User storage user = users[userId];
+        uint nextPool = user.poollevel;
+        if (nextPool >= poolPackages.length) {
+            return (false, "You are already at the highest pool");
+        }
+
+        uint requiredLevel = minLevelForPool[nextPool];
+
+        if (user.level < requiredLevel) {
+            return (false, "You need to reach a higher level first");
+        }
+
+        if (nextPool > 0 && user.poollevel < nextPool) {
+            return (false, "Buy previous pool first");
+        }
+
+        return (true, "Eligible to buy next pool");
+    }
+
+
+    function upgradePoolByEarning(uint32 _userId, uint _poolId, uint _upgradeType) external {
+    // _upgradeType = 1 → Retopup (same pool)
+    // _upgradeType = 2 → Upgrade to next pool
+
+    User storage user = users[_userId];
+    require(user.account == msg.sender, "Not your account");
+    require(user.poollevel < 7, "At max pool");
+    require(_upgradeType == 1 || _upgradeType == 2, "Invalid upgrade type");
+
+    uint256 packagePrice;
+    uint256 targetPool;
+
+    // -----------------------------------
+    // 🔹 Case 1: Retopup (same pool)
+    // -----------------------------------
+    if (_upgradeType == 1) {
+        packagePrice = poolPackages[_poolId];
+        targetPool = _poolId;
+
+        UserPoolTopup storage top = userPooltopup[_poolId][_userId];
+        require(top.reTopupAmt >= packagePrice, "Not enough reTopup balance");
+
+        // Deduct balance
+        top.reTopupAmt -= packagePrice;
+
+        // Record deposit
+        user.poolDeposit += packagePrice;
+
+        // Place new entry in same pool
+        _placeInPool(targetPool, _userId, packagePrice);
+
+        // Log
+        user.deposits.push(Deposit({
+            amount: packagePrice,
+            withdrawn: 0,
+            start: block.timestamp,
+            depositType: 10 // Retopup via earning
+        }));
+
+        emit Upgrade(msg.sender, _userId, targetPool + 1, "Pool ReTopup (Earning)");
+    }
+
+    // -----------------------------------
+    // 🔹 Case 2: Upgrade to next pool
+    // -----------------------------------
+    else if (_upgradeType == 2) {
+        require(_poolId + 1 < poolPackages.length, "No higher pool");
+        packagePrice = poolPackages[_poolId + 1];
+        targetPool = _poolId + 1;
+
+        uint requiredLevel = minLevelForPool[_poolId]; 
+        require(user.level >= requiredLevel, "Upgrade your level first");
+
+        // Check internal funds
+        UserPoolTopup storage top = userPooltopup[_poolId][_userId];
+        require(top.nextPoolAmt >= packagePrice, "Not enough next pool balance");
+        require(!userHasPool[_userId][targetPool], "Already purchased next pool");
+
+        // Deduct funds
+        top.nextPoolAmt -= packagePrice;
+
+        // Update user info
+        user.poollevel += 1;
+        //user.highestPool = user.poollevel;
+        user.poolDeposit += packagePrice;
+        userHasPool[_userId][targetPool] = true;
+
+        // Place in next pool
+        _placeInPool(targetPool, _userId, packagePrice);
+
+        // Record deposit
+        user.deposits.push(Deposit({
+            amount: packagePrice,
+            withdrawn: 0,
+            start: block.timestamp,
+            depositType: 11 // Upgrade via earning
+        }));
+
+        emit Upgrade(msg.sender, _userId, targetPool + 1, "Pool Upgrade (Earning)");
+    }
+}
 
 
      function upgradePool(uint32 _userId) external {
@@ -204,21 +308,34 @@ contract Nanakshahi {
         require(user.poollevel < 7, "At max level");
         
         uint nextLevel = user.poollevel;
+
+        uint nextPool = user.poollevel; // next pool to buy (0-based index)
+        uint requiredLevel = minLevelForPool[nextPool]; // required main level for this pool
+
+        //  Check 1: Ensure user has required main level
+        require(user.level >= requiredLevel, "Upgrade your level first");
+
+        //  Check 2: Must buy sequentially (can't skip pools)
+        if (nextPool > 0) {
+            require(user.poollevel == nextPool, "Buy previous pool first");
+        }
+        require(!userHasPool[_userId][nextPool], "Pool already purchased");
+
         uint packagePrice = poolPackages[nextLevel];
         
         // Transfer USDT for the next package
         usdt.transferFrom(msg.sender, address(this), packagePrice);
         
         user.poollevel += 1;
-       
+        userHasPool[_userId][nextPool] = true;
         user.poolDeposit += packagePrice;
-         _placeInPool(nextLevel, _userId, packagePrice);
+        _placeInPool(nextLevel, _userId, packagePrice);
             // add in Deposit 
-          user.deposits.push(Deposit({
+        user.deposits.push(Deposit({
             amount: packagePrice,
             withdrawn: 0,
             start: block.timestamp,
-            depositType:2
+            depositType:10
         }));
 
         emit Upgrade(msg.sender, _userId, nextLevel + 1, "Pool");
@@ -243,9 +360,7 @@ contract Nanakshahi {
                 mainid: userMainId,
                 poolId: poolId,
                 parentId: parentId,
-                bonusCount: 0,
-                nextPoolAmt: 0,
-                reTopupAmt: 0
+                bonusCount: 0
             });
             poolUsers[poolId].push(newUserId);
             userIdPerPool[poolId][userMainId].push(newUserId);
@@ -258,7 +373,7 @@ contract Nanakshahi {
           if (_parentId == 0 || _parentId == defaultRefId) {
             _sendToCreator(_amount);
             return;
-        }
+        }        
         uint _amountPerLevel = _amount / 3;  
 
         for(uint i=0; i<3; i++){
@@ -273,11 +388,13 @@ contract Nanakshahi {
                 }
                 if(userp.bonusCount>=24 && userp.bonusCount<36){
                     userp.bonusCount +=1;
-                    userp.nextPoolAmt += _amountPerLevel;
+                    userPooltopup[_poolId][parentMainId].nextPoolAmt += _amountPerLevel;
+                   // userp.nextPoolAmt += _amountPerLevel;
                 }
                 if(userp.bonusCount>=36 ){
                     userp.bonusCount +=1;
-                    userp.reTopupAmt += _amountPerLevel;
+                     userPooltopup[_poolId][parentMainId].reTopupAmt += _amountPerLevel;
+                   // userp.reTopupAmt += _amountPerLevel;
                 }
             }
         }     
@@ -286,8 +403,7 @@ contract Nanakshahi {
    
    // Pay a booster slice and record bookkeeping.
     function _payPoolIncome(uint receiverId, uint fromId, uint amount, uint packageLevel) private {
-        address to = users[receiverId].account;
-        usdt.transfer(to, amount);
+       
 
         UserIncome storage inc = userIncomes[receiverId];
         inc.totalIncome += amount;
@@ -300,6 +416,11 @@ contract Nanakshahi {
             timestamp: block.timestamp,
             incomeType: 10 // infintiy pool income
         }));
+
+        address to = users[receiverId].account;
+        uint netamount = (amount* 95 )/100;
+        usdt.transfer(to, netamount);
+        _sendToCreator((amount*5) / 100);
 
         emit IncomeDistributed(to, users[fromId].account, amount, packageLevel, 10);
     }

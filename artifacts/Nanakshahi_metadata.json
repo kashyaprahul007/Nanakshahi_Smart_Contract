@@ -342,6 +342,30 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					}
+				],
+				"name": "canBuyNextPool",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "eligible",
+						"type": "bool"
+					},
+					{
+						"internalType": "string",
+						"name": "reason",
+						"type": "string"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
 						"name": "_userId",
 						"type": "uint256"
 					}
@@ -538,6 +562,25 @@
 					}
 				],
 				"name": "matrixDirect",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "minLevelForPool",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -774,6 +817,29 @@
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint32",
+						"name": "_userId",
+						"type": "uint32"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_poolId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_upgradeType",
+						"type": "uint256"
+					}
+				],
+				"name": "upgradePoolByEarning",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "usdt",
 				"outputs": [
@@ -810,6 +876,30 @@
 						"internalType": "uint256",
 						"name": "",
 						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "userHasPool",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
 					}
 				],
 				"stateMutability": "view",
@@ -942,7 +1032,26 @@
 						"internalType": "uint256",
 						"name": "bonusCount",
 						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
 					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "userPooltopup",
+				"outputs": [
 					{
 						"internalType": "uint256",
 						"name": "nextPoolAmt",
@@ -1060,11 +1169,11 @@
 	},
 	"sources": {
 		"contracts/modules/SponsorMatrix.sol": {
-			"keccak256": "0x7a5e39e1e879ccc31b3e3c60891b82b02aa0743e9cb552349e6c6207177ccd7a",
+			"keccak256": "0x22d64e73dfc440d01f7a8ed61842d201d999b9cb6eea1940ee066d6c3a58dbf7",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://951f1d935629ba68d8a55da5a03b2f9a8da7102c3535bf415c918810724cb9bb",
-				"dweb:/ipfs/QmQxVyw2rdmkbAMZCJUPyh3yj1WQvddtcuk8KVEvsah717"
+				"bzz-raw://ac86f4470ab4ce927829455ef778c31c7bb1d6d4b2a1cdd452d8380ca0d4b903",
+				"dweb:/ipfs/QmaN38Bic9968wkUUbZzw2PaT4nSo4EktbYKXVrWKMiMYt"
 			]
 		}
 	},
