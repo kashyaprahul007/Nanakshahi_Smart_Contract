@@ -50,8 +50,10 @@ contract Nanakshahi {
         102400 * 1e18,  // 102400$
         204800 * 1e18   // 204800$
     ];
- uint[] public poolPackages = [25e18, 100e18, 400e18, 1600e18, 6400e18, 25600e18, 102400e18];
- uint[7] public minLevelForPool = [3, 5, 7, 9, 11, 13, 15];
+    uint[] public poolPackages = [25e18, 100e18, 400e18, 1600e18, 6400e18, 25600e18, 102400e18];
+    uint[] public GlbBoosterPackages = [ 100e18, 200e18, 400e18, 800e18, 1600e18, 3200e18, 6400e18, 12800e18];
+    uint[7] public minLevelForPool = [3, 5, 7, 9, 11, 13, 15];
+    uint[8] public minLevelForGlbBooster = [4, 5, 6, 7, 8, 9, 10,11];
         //  User struct into basic info and relationships
     struct Deposit {
         uint256 amount;
@@ -73,6 +75,8 @@ contract Nanakshahi {
         uint totalDeposit;
         uint poollevel;
         uint poolDeposit;
+        uint boosterlevel;
+        uint boosterDeposit;
         uint registrationTime;
 
     }
@@ -86,7 +90,8 @@ contract Nanakshahi {
         uint royaltyIncome;
         uint royaltyIncomeClaimed; // Track claimed royalty for capping
         uint communityIncome;        // <-- NEW: total community bonus claimed
-        uint poolIncome;        // <-- NEW: total community bonus claimed
+        uint poolIncome;        // <-- Infinity Pool Income
+        uint boosterIncome;        // <-- Infinity Pool Income
     }
 
     struct Income {
@@ -94,22 +99,30 @@ contract Nanakshahi {
         uint amount;
         uint packageLevel;
         uint timestamp;
-        uint incomeType; // 1: Sponsor, 2: Matrix, 3: Level, 4: Level Booster, 5: Creator, 6: Royalty , 7 Lottery  , 8 Roi Income
+        uint incomeType; // 1: Sponsor, 2: Matrix, 3: Level, 4: Level Booster, 5: Creator, 6: Royalty , 7 Lottery  , 8 Roi Income, 10 Infintiy Pool, 11 Booster Income
     }
 
-        struct UserPool {
+    struct UserPool {
         uint id;               
         uint mainid;
         uint poolId;
         uint parentId;  
-        uint bonusCount;
-            
+        uint bonusCount;            
     }
 
+    struct UserBooster {
+        uint id; 
+        uint poolId;
+        uint parentId;  
+        uint bonusCount;            
+    }
+    
     struct UserPoolTopup{
          uint nextPoolAmt;       
         uint reTopupAmt;     
     }
+
+    /* mapping for Infinity Pool*/
     mapping(uint =>  mapping(uint => UserPoolTopup)) public userPooltopup;
 
     mapping(uint =>  mapping(uint => UserPool)) public userPooldtl;
@@ -117,6 +130,12 @@ contract Nanakshahi {
     mapping(uint => mapping(uint => uint[])) public userIdPerPool;// will store user ids pool wise
     mapping(uint => uint[]) public poolUsers; // store all users  pool wise
     mapping(uint => mapping(uint => bool)) public userHasPool; 
+
+    /* mapping for Global Booster */
+    mapping(uint =>  mapping(uint => UserBooster)) public userBoosterdtl;
+    mapping(uint =>  mapping(uint => uint[])) public userBoosterChildren;
+    mapping(uint => uint[]) public boosterUsers;  // store all users booster wise
+    mapping(uint => mapping(uint => bool)) public userHasbooster; 
 
     // === EVENTS ===
 
@@ -175,6 +194,7 @@ contract Nanakshahi {
         creator.level = 15; // Creator starts at max level
         creator.registrationTime = block.timestamp;
         creator.poollevel = 7;
+        creator.boosterlevel = 8;
         
         // Set initial deposit for creator
         uint totalDeposit = 0;
@@ -184,7 +204,9 @@ contract Nanakshahi {
         creator.totalDeposit = totalDeposit;
         addressToId[_creatorWallet] = defaultRefId;
 
-         for(uint j = 0; j < poolPackages.length; j++) {
+        totalDeposit = 0;
+        for(uint j = 0; j < poolPackages.length; j++) {
+            totalDeposit += poolPackages[j];
             userPooldtl[j][defaultRefId] = UserPool({
                 id: defaultRefId,
                 mainid: defaultRefId,
@@ -195,7 +217,21 @@ contract Nanakshahi {
             poolUsers[j].push(defaultRefId);
             userIdPerPool[j][defaultRefId].push(defaultRefId);
         }
-        
+        creator.poolDeposit = totalDeposit;
+
+        totalDeposit =0;
+         for(uint k = 0; k < 8; k++) {
+             totalDeposit += GlbBoosterPackages[k];
+            userBoosterdtl[k][defaultRefId] = UserBooster({
+                id: defaultRefId,              
+                poolId: k,
+                parentId: 0,
+                bonusCount: 0
+            });
+            boosterUsers[k].push(defaultRefId);
+            
+        }
+       creator.boosterDeposit = totalDeposit;
     }
 
     function canBuyNextPool(uint userId) public view returns (bool eligible, string memory reason) {
@@ -219,52 +255,56 @@ contract Nanakshahi {
     }
 
 
-    function upgradePoolByEarning(uint32 _userId, uint _poolId, uint _upgradeType) external {
-    // _upgradeType = 1 → Retopup (same pool)
-    // _upgradeType = 2 → Upgrade to next pool
-
+    function RetopPoolByEarning(uint32 _userId, uint _poolId) external {
+   
     User storage user = users[_userId];
     require(user.account == msg.sender, "Not your account");
     require(user.poollevel < 7, "At max pool");
-    require(_upgradeType == 1 || _upgradeType == 2, "Invalid upgrade type");
+    //require(_upgradeType == 1 || _upgradeType == 2, "Invalid upgrade type");
 
     uint256 packagePrice;
-    uint256 targetPool;
 
-    // -----------------------------------
-    // 🔹 Case 1: Retopup (same pool)
-    // -----------------------------------
-    if (_upgradeType == 1) {
-        packagePrice = poolPackages[_poolId];
-        targetPool = _poolId;
+    packagePrice = poolPackages[_poolId];
+   
+    UserPoolTopup storage top = userPooltopup[_poolId][_userId];
+    require(top.reTopupAmt >= packagePrice, "Not enough reTopup balance");
 
-        UserPoolTopup storage top = userPooltopup[_poolId][_userId];
-        require(top.reTopupAmt >= packagePrice, "Not enough reTopup balance");
+    // Deduct balance
+    top.reTopupAmt -= packagePrice;
 
-        // Deduct balance
-        top.reTopupAmt -= packagePrice;
+    // Record deposit
+    user.poolDeposit += packagePrice;
 
-        // Record deposit
-        user.poolDeposit += packagePrice;
+    // Place new entry in same pool
+    _placeInPool(_poolId, _userId, packagePrice);
 
-        // Place new entry in same pool
-        _placeInPool(targetPool, _userId, packagePrice);
+    // Log
+    user.deposits.push(Deposit({
+        amount: packagePrice,
+        withdrawn: 0,
+        start: block.timestamp,
+        depositType: 10 // Retopup via earning
+    }));
 
-        // Log
-        user.deposits.push(Deposit({
-            amount: packagePrice,
-            withdrawn: 0,
-            start: block.timestamp,
-            depositType: 10 // Retopup via earning
-        }));
+    emit Upgrade(msg.sender, _userId, _poolId, "Pool ReTopup (Earning)");
+   
 
-        emit Upgrade(msg.sender, _userId, targetPool + 1, "Pool ReTopup (Earning)");
-    }
+   
+}
+    function upgradePoolByEarning(uint32 _userId, uint _poolId) external {
+        // _upgradeType = 1 → Retopup (same pool)
+        // _upgradeType = 2 → Upgrade to next pool
 
-    // -----------------------------------
-    // 🔹 Case 2: Upgrade to next pool
-    // -----------------------------------
-    else if (_upgradeType == 2) {
+        User storage user = users[_userId];
+        require(user.account == msg.sender, "Not your account");
+        require(user.poollevel < 7, "At max pool");
+    
+
+        uint256 packagePrice;
+        uint256 targetPool;
+
+    
+    
         require(_poolId + 1 < poolPackages.length, "No higher pool");
         packagePrice = poolPackages[_poolId + 1];
         targetPool = _poolId + 1;
@@ -282,7 +322,7 @@ contract Nanakshahi {
 
         // Update user info
         user.poollevel += 1;
-        //user.highestPool = user.poollevel;
+    
         user.poolDeposit += packagePrice;
         userHasPool[_userId][targetPool] = true;
 
@@ -298,11 +338,10 @@ contract Nanakshahi {
         }));
 
         emit Upgrade(msg.sender, _userId, targetPool + 1, "Pool Upgrade (Earning)");
+    
     }
-}
 
-
-     function upgradePool(uint32 _userId) external {
+    function upgradePool(uint _userId) external {
         User storage user = users[_userId];
         require(user.account == msg.sender, "Not your account");
         require(user.poollevel < 7, "At max level");
@@ -342,7 +381,7 @@ contract Nanakshahi {
     }
 
     
-    function _placeInPool(uint256 poolId, uint32 userMainId, uint packagePrice) private {
+    function _placeInPool(uint256 poolId, uint userMainId, uint packagePrice) private {
         require(poolId < poolPackages.length, "Invalid");
         require(msg.value == poolPackages[poolId], "Incorrect amount");
 
@@ -362,14 +401,77 @@ contract Nanakshahi {
                 parentId: parentId,
                 bonusCount: 0
             });
-            poolUsers[poolId].push(newUserId);
-            userIdPerPool[poolId][userMainId].push(newUserId);
-            userChildren[poolId][parentId].push(newUserId);
-            _distributePoolIncome( parentId, poolId, userMainId, packagePrice);
+           
+        userIdPerPool[poolId][userMainId].push(newUserId);
+        userChildren[poolId][parentId].push(newUserId);
+        _distributePoolIncome( parentId, poolId, userMainId, packagePrice);
     }
     
 
-        function _distributePoolIncome( uint _parentId, uint _poolId, uint _userMainId, uint _amount) private {
+    function upgradeBooster(uint _userId) external {
+        User storage user = users[_userId];
+        require(user.account == msg.sender, "Not your account");
+        require(user.boosterlevel < 8, "At max level");
+        
+        //uint nextLevel = user.boosterlevel;
+
+        uint nextPool = user.boosterlevel; // next pool to buy (0-based index)
+        uint requiredLevel = minLevelForGlbBooster[nextPool]; // required main level for this pool
+
+        //  Check 1: Ensure user has required main level
+        require(user.level >= requiredLevel, "Upgrade your level first");
+
+        //  Check 2: Must buy sequentially (can't skip pools)
+        if (nextPool > 0) {
+            require(user.boosterlevel == nextPool, "Buy previous pool first");
+        }
+        require(!userHasbooster[_userId][nextPool], "Pool already purchased");
+
+        uint packagePrice = GlbBoosterPackages[nextPool];
+        
+        // Transfer USDT for the next package
+        usdt.transferFrom(msg.sender, address(this), packagePrice);
+        
+        user.boosterlevel += 1;
+        userHasbooster[_userId][nextPool] = true;
+        user.boosterDeposit += packagePrice;
+        _placeInBooster(nextPool, _userId, packagePrice);
+            // add in Deposit 
+        user.deposits.push(Deposit({
+            amount: packagePrice,
+            withdrawn: 0,
+            start: block.timestamp,
+            depositType:11
+        }));
+
+        emit Upgrade(msg.sender, _userId, nextPool + 1, "Booster");
+    }
+
+    
+    function _placeInBooster(uint256 poolId, uint userMainId, uint packagePrice) private {
+        require(poolId < GlbBoosterPackages.length, "Invalid");
+        require(msg.value == GlbBoosterPackages[poolId], "Incorrect amount");
+
+        uint [] memory usersLen = boosterUsers[poolId];
+       
+        uint index = usersLen.length;               // current index for new user
+        //uint newUserId = userMainId;//defaultRefId + uint(index);
+        boosterUsers[poolId].push(userMainId);
+        // parent by formula
+        uint256 parentIndex = (index - 1) / 3;
+        uint parentId = usersLen[parentIndex];
+
+         userBoosterdtl[poolId][userMainId] = UserBooster({
+                id: userMainId,               
+                poolId: poolId,
+                parentId: parentId,
+                bonusCount: 0
+            });
+            userBoosterChildren[poolId][parentId].push(userMainId);
+           // _distributePoolIncome( parentId, poolId, userMainId, packagePrice);
+    }
+
+    function _distributePoolIncome( uint _parentId, uint _poolId, uint _userMainId, uint _amount) private {
           if (_parentId == 0 || _parentId == defaultRefId) {
             _sendToCreator(_amount);
             return;

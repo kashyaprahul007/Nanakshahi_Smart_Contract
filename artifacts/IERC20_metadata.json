@@ -210,18 +210,19 @@
 			"bytecodeHash": "ipfs"
 		},
 		"optimizer": {
-			"enabled": false,
+			"enabled": true,
 			"runs": 200
 		},
-		"remappings": []
+		"remappings": [],
+		"viaIR": true
 	},
 	"sources": {
 		"contracts/modules/SponsorMatrix.sol": {
-			"keccak256": "0x22d64e73dfc440d01f7a8ed61842d201d999b9cb6eea1940ee066d6c3a58dbf7",
+			"keccak256": "0xe7a9b9afb1bd844ba16775ce57b1b4545459f52799b1844996bf448e670976a7",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://ac86f4470ab4ce927829455ef778c31c7bb1d6d4b2a1cdd452d8380ca0d4b903",
-				"dweb:/ipfs/QmaN38Bic9968wkUUbZzw2PaT4nSo4EktbYKXVrWKMiMYt"
+				"bzz-raw://dcc9b4f05815101dff382147a78b5f51a1296dcae0bcb5cbc9de6fc44b7d3a99",
+				"dweb:/ipfs/QmPAtWa47iNHX6UsxU8hnfrDyyhugRjeY88dSZJgXDJAmR"
 			]
 		}
 	},

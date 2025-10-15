@@ -268,6 +268,25 @@
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "GlbBoosterPackages",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "PERCENTS_DIVIDER",
 				"outputs": [
@@ -307,6 +326,24 @@
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint32",
+						"name": "_userId",
+						"type": "uint32"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_poolId",
+						"type": "uint256"
+					}
+				],
+				"name": "RetopPoolByEarning",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "TIME_STEP",
 				"outputs": [
@@ -328,6 +365,30 @@
 					}
 				],
 				"name": "addressToId",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "boosterUsers",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -580,6 +641,25 @@
 						"type": "uint256"
 					}
 				],
+				"name": "minLevelForGlbBooster",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
 				"name": "minLevelForPool",
 				"outputs": [
 					{
@@ -806,9 +886,22 @@
 			{
 				"inputs": [
 					{
-						"internalType": "uint32",
+						"internalType": "uint256",
 						"name": "_userId",
-						"type": "uint32"
+						"type": "uint256"
+					}
+				],
+				"name": "upgradeBooster",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_userId",
+						"type": "uint256"
 					}
 				],
 				"name": "upgradePool",
@@ -827,11 +920,6 @@
 						"internalType": "uint256",
 						"name": "_poolId",
 						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_upgradeType",
-						"type": "uint256"
 					}
 				],
 				"name": "upgradePoolByEarning",
@@ -847,6 +935,74 @@
 						"internalType": "contract IERC20",
 						"name": "",
 						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "userBoosterChildren",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "userBoosterdtl",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "poolId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "parentId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "bonusCount",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -895,6 +1051,30 @@
 					}
 				],
 				"name": "userHasPool",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "userHasbooster",
 				"outputs": [
 					{
 						"internalType": "bool",
@@ -987,6 +1167,11 @@
 					{
 						"internalType": "uint256",
 						"name": "poolIncome",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "boosterIncome",
 						"type": "uint256"
 					}
 				],
@@ -1133,6 +1318,16 @@
 					},
 					{
 						"internalType": "uint256",
+						"name": "boosterlevel",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "boosterDeposit",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
 						"name": "registrationTime",
 						"type": "uint256"
 					}
@@ -1162,18 +1357,19 @@
 			"bytecodeHash": "ipfs"
 		},
 		"optimizer": {
-			"enabled": false,
+			"enabled": true,
 			"runs": 200
 		},
-		"remappings": []
+		"remappings": [],
+		"viaIR": true
 	},
 	"sources": {
 		"contracts/modules/SponsorMatrix.sol": {
-			"keccak256": "0x22d64e73dfc440d01f7a8ed61842d201d999b9cb6eea1940ee066d6c3a58dbf7",
+			"keccak256": "0xe7a9b9afb1bd844ba16775ce57b1b4545459f52799b1844996bf448e670976a7",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://ac86f4470ab4ce927829455ef778c31c7bb1d6d4b2a1cdd452d8380ca0d4b903",
-				"dweb:/ipfs/QmaN38Bic9968wkUUbZzw2PaT4nSo4EktbYKXVrWKMiMYt"
+				"bzz-raw://dcc9b4f05815101dff382147a78b5f51a1296dcae0bcb5cbc9de6fc44b7d3a99",
+				"dweb:/ipfs/QmPAtWa47iNHX6UsxU8hnfrDyyhugRjeY88dSZJgXDJAmR"
 			]
 		}
 	},
