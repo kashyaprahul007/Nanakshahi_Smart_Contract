@@ -1,36 +1,46 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.30;
+
+
+import "../core/Ownable.sol";
+import "../core/Storage.sol";
+import "../core/Utils.sol";
+//import "./modules/ContestRoyalty.sol";
+//import "./modules/SponsorMatrix.sol";
+
 
 /**
  * @title CompanyMultiMatrixConstants
  * @dev 3× company-wide matrices (5 levels) with constant reward percentages
  * Author: Rahul + GPT-5 team
  */
-contract CompanyMultiMatrixConstants {
-    uint8 public constant MAX_CHILDREN = 3;
+    contract InfinityPool is Ownable, Storage {
+    //uint8 public constant MAX_CHILDREN = 3;
     uint32 public constant START_ID = 1000;
 
-    // === CONFIGURATION ===
 
-    // Fixed matrix entry prices (in wei)
-    //uint256[5] public constant MATRIX_PRICES = [100e18,200e18, 500e18,1000e18,2000e18];
-      uint256[5] public immutable MATRIX_PRICES;
-
-    // Reward percentages (in whole numbers)
-    // [Level1, Level2, Level3, Company]
-    uint8[4] public immutable REWARD_PCT = [40, 30, 20, 10];
 
     // === DATA STRUCTURES ===
 
-    struct User {
-        uint32 id;                // user ID starting from 1000
-        address userAddress;      // wallet address
-        uint32 parentId;          // parent ID (also starts from 1000)
-        uint32[] children;        // list of child IDs
+    struct UserPool {
+        uint32 id;               
+        uint32 mainid;
+        uint8 poolId;
+        uint32 parentId;          
+       // uint32[] children;        // list of child IDs
+        uint8 bonusCount;
+        uint256 nextPoolT;       
+        uint256 reTopup;          
     }
 
-    // matrixId => array of users (index 0 = company root)
-    mapping(uint8 => User[]) public matrices;
+    mapping(uint8 =>  mapping(uint32 => UserPool)) public userPooldtl;
+
+    mapping(uint8 => mapping(uint32 => uint32[])) public userChildren;// 
+    mapping(uint8 => mapping(uint32 => uint32[])) public userIdPerPool;// will store user ids per pool
+
+ 
+    uint[] public matrix_Amt = [25e18, 100e18, 400e18, 1600e18, 6400e18, 25600e18, 102400e18];
+    mapping(uint8 => uint32[]) public matrixUser; // store all users  matrix wise
 
     // === EVENTS ===
 
@@ -45,39 +55,33 @@ contract CompanyMultiMatrixConstants {
 
     event RewardSent(address indexed to, uint256 amount, string level);
 
-    // === CONSTRUCTOR ===
+    
+    constructor() { 
+        for(uint8 i = 0; i < matrix_Amt.length; i++) {
 
-    constructor() {
-
-           MATRIX_PRICES[0] = 100e18;
-        MATRIX_PRICES[1] = 200e18;
-        MATRIX_PRICES[2] = 500e18;
-        MATRIX_PRICES[3] = 1000e18;
-        MATRIX_PRICES[4] = 2000e18;
-        // Initialize company root for all matrices
-        for (uint8 i = 0; i < MATRIX_PRICES.length; i++) {
-            User memory root = User({
-                id: START_ID,
-                userAddress: msg.sender,
-                parentId: 0,
-                children: new uint32 
+            userPooldtl[i][START_ID]({
+                 id: START_ID,               
+                 mainid: START_ID,
+                 poolId: i
             });
-            matrices[i].push(root);
+            matrixUser[i].push(START_ID);
+            userIdPerPool[i][START_ID].push(START_ID);
         }
     }
 
     // === MAIN JOIN FUNCTION ===
 
-    function joinMatrix(uint8 matrixId) external payable {
-        require(matrixId < MATRIX_PRICES.length, "Invalid matrix");
-        require(msg.value == MATRIX_PRICES[matrixId], "Incorrect amount");
+    function joinMatrix(uint8 matrixId, uint32 userMainId) external payable {
+        require(matrixId < matrix_Amt.length, "Invalid matrix");
+        require(msg.value == matrix_Amt[matrixId], "Incorrect amount");
 
-        User[] storage users = matrices[matrixId];
-        uint256 index = users.length;               // current index for new user
+        Users[] memory users = matrixUser[matrixId];
+        matrixUser[matrixId].push();
+        uint32 index = users.length;               // current index for new user
         uint32 newUserId = START_ID + uint32(index);
 
         // parent by formula
-        uint256 parentIndex = (index - 1) / MAX_CHILDREN;
+        uint256 parentIndex = (index - 1) / 3;
         User storage parent = users[parentIndex];
 
         // create user

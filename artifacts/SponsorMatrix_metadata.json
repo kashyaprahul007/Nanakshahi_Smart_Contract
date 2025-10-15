@@ -1,6 +1,6 @@
 {
 	"compiler": {
-		"version": "0.8.20+commit.a1b79de6"
+		"version": "0.8.30+commit.73712a01"
 	},
 	"language": "Solidity",
 	"output": {
@@ -563,50 +563,6 @@
 				"type": "function"
 			},
 			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "sponsorStructure",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "package",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "sponsorIncome",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "lvlUpline",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "lvlUplineIncome",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "splitUpline",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "splitUplineIncome",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
 				"inputs": [],
 				"name": "systemMaintance",
 				"outputs": [
@@ -834,7 +790,7 @@
 		"compilationTarget": {
 			"contracts/modules/SponsorMatrix.sol": "SponsorMatrix"
 		},
-		"evmVersion": "shanghai",
+		"evmVersion": "prague",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
@@ -846,18 +802,12 @@
 		"remappings": []
 	},
 	"sources": {
-		"contracts/core/Storage.sol": {
-			"keccak256": "0xe5ecbee3190536268a5360e951d59cce7343d581ee36402c3bac450f1f1058e0",
-			"urls": [
-				"bzz-raw://c313e98e568d39e5411518686b83538029e5ea1ada0518132e86dece754c62c9",
-				"dweb:/ipfs/QmTboyPSMikKPFXZnW43qzct3PDezNR4k9R7RZzjv1u9nU"
-			]
-		},
 		"contracts/modules/SponsorMatrix.sol": {
-			"keccak256": "0xa9329ada1b07ccec25db018452156a7e9ba2e35609eb439c7ac6d7fc8b287211",
+			"keccak256": "0x6203a08c70f4231e2261d62f9e51048f409f47fa6c1df88409d155b4b2eaab18",
+			"license": "MIT",
 			"urls": [
-				"bzz-raw://315e91adf85112e605b24294e7c427635819731190e662044ff29380602fedf9",
-				"dweb:/ipfs/QmUqLryRBk1uEG3DzHXVJ9dKuKxb9izVSJty3477TAA3Uy"
+				"bzz-raw://e8ea1586b694ab84052be8712b0a22bc89571d3b7ce3d7bf989aeac936f833a6",
+				"dweb:/ipfs/Qma5ZLGve6MQjCMouKmG4Qkp9Cm1zbW331ddugizVXpc8Z"
 			]
 		}
 	},

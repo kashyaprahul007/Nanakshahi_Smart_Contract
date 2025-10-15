@@ -1,6 +1,6 @@
 {
 	"compiler": {
-		"version": "0.8.20+commit.a1b79de6"
+		"version": "0.8.30+commit.73712a01"
 	},
 	"language": "Solidity",
 	"output": {
@@ -204,7 +204,7 @@
 		"compilationTarget": {
 			"contracts/modules/SponsorMatrix.sol": "IERC20"
 		},
-		"evmVersion": "shanghai",
+		"evmVersion": "prague",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
@@ -216,18 +216,12 @@
 		"remappings": []
 	},
 	"sources": {
-		"contracts/core/Storage.sol": {
-			"keccak256": "0xe5ecbee3190536268a5360e951d59cce7343d581ee36402c3bac450f1f1058e0",
-			"urls": [
-				"bzz-raw://c313e98e568d39e5411518686b83538029e5ea1ada0518132e86dece754c62c9",
-				"dweb:/ipfs/QmTboyPSMikKPFXZnW43qzct3PDezNR4k9R7RZzjv1u9nU"
-			]
-		},
 		"contracts/modules/SponsorMatrix.sol": {
-			"keccak256": "0xa9329ada1b07ccec25db018452156a7e9ba2e35609eb439c7ac6d7fc8b287211",
+			"keccak256": "0x7a5e39e1e879ccc31b3e3c60891b82b02aa0743e9cb552349e6c6207177ccd7a",
+			"license": "MIT",
 			"urls": [
-				"bzz-raw://315e91adf85112e605b24294e7c427635819731190e662044ff29380602fedf9",
-				"dweb:/ipfs/QmUqLryRBk1uEG3DzHXVJ9dKuKxb9izVSJty3477TAA3Uy"
+				"bzz-raw://951f1d935629ba68d8a55da5a03b2f9a8da7102c3535bf415c918810724cb9bb",
+				"dweb:/ipfs/QmQxVyw2rdmkbAMZCJUPyh3yj1WQvddtcuk8KVEvsah717"
 			]
 		}
 	},

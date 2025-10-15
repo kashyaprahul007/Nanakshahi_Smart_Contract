@@ -1,0 +1,100 @@
+{
+	"compiler": {
+		"version": "0.8.30+commit.73712a01"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [],
+				"name": "PERCENTS_DIVIDER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "ROI_CAP_DIVIDER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "ROI_CAP_MULTIPLIER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "TIME_STEP",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"details": "Centralized configuration for all modules (rewards, matrix, timing)",
+			"kind": "dev",
+			"methods": {},
+			"title": "Constants",
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/config/constant.sol": "Constants"
+		},
+		"evmVersion": "prague",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/config/constant.sol": {
+			"keccak256": "0xa8f94a9ad14529740d6bc5d2f9b5cf32dce7198cd76c8fb153e3507bd7916be4",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://44916246121ed9f4675dd5d3ae9c3bca28de830ffaa621d438f83c3a1da6726e",
+				"dweb:/ipfs/QmVQCiswpz1UQYWsuqiCCtYu59qfrkCUXQSdtv2p9JY1JT"
+			]
+		}
+	},
+	"version": 1
+}

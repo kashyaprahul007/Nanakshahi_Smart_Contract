@@ -1,6 +1,5 @@
-pragma solidity ^0.8.20;
-
-import "../core/Storage.sol";
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.30;
 
 
 interface IERC20 {
@@ -17,7 +16,7 @@ interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
-contract SponsorMatrix {
+contract Nanakshahi {
     IERC20 public usdt;
     address public owner;
     address public creatorWallet;   
@@ -26,11 +25,13 @@ contract SponsorMatrix {
     uint public defaultRefId;
     uint public totalUsers;
     uint private constant maxLayers = 15;
-    // Package prices in USDT (with 18 decimals)
+
     uint256 public constant PERCENTS_DIVIDER = 10000;
     uint256 public constant TIME_STEP = 1 days;
     uint256 public constant ROI_CAP_MULTIPLIER = 25; // 2.5x
     uint256 public constant ROI_CAP_DIVIDER = 10;
+    // Package prices in USDT (with 18 decimals)
+
 
     uint[] public packages = [
         15 * 1e18,      // 15$
@@ -54,7 +55,8 @@ contract SponsorMatrix {
     struct Deposit {
         uint256 amount;
         uint256 withdrawn;
-        uint256 start;    
+        uint256 start; 
+        uint8 depositType;  
     }
 
     struct User {
@@ -68,6 +70,8 @@ contract SponsorMatrix {
         uint directTeam; // Direct referrals count
         uint totalMatrixTeam; // Total users in matrix
         uint totalDeposit;
+        uint poollevel;
+        uint poolDeposit;
         uint registrationTime;
 
     }
@@ -81,7 +85,7 @@ contract SponsorMatrix {
         uint royaltyIncome;
         uint royaltyIncomeClaimed; // Track claimed royalty for capping
         uint communityIncome;        // <-- NEW: total community bonus claimed
-
+        uint poolIncome;        // <-- NEW: total community bonus claimed
     }
 
     struct Income {
@@ -91,14 +95,38 @@ contract SponsorMatrix {
         uint timestamp;
         uint incomeType; // 1: Sponsor, 2: Matrix, 3: Level, 4: Level Booster, 5: Creator, 6: Royalty , 7 Lottery  , 8 Roi Income
     }
-    struct SponsorStructure{
-        uint package;
-        uint sponsorIncome;
-        uint lvlUpline;
-        uint lvlUplineIncome;
-        uint splitUpline;
-        uint splitUplineIncome;
+
+        struct UserPool {
+        uint id;               
+        uint mainid;
+        uint poolId;
+        uint parentId;  
+        uint bonusCount;
+        uint nextPoolAmt;       
+        uint reTopupAmt;          
     }
+
+    mapping(uint =>  mapping(uint => UserPool)) public userPooldtl;
+
+    mapping(uint => mapping(uint => uint[])) public userChildren;// in each pool id wise
+    mapping(uint => mapping(uint => uint[])) public userIdPerPool;// will store user ids pool wise
+
+ 
+    uint[] public poolPackages = [25e18, 100e18, 400e18, 1600e18, 6400e18, 25600e18, 102400e18];
+    mapping(uint => uint[]) public poolUsers; // store all users  pool wise
+
+    // === EVENTS ===
+
+    event UserJoined(
+        uint8 indexed matrixId,
+        uint32 indexed userId,
+        address indexed user,
+        uint32 parentId,
+        address parentAddr,
+        uint8 position
+    );
+
+    event RewardSent(address indexed to, uint256 amount, string level);
 
     mapping(address => uint) public addressToId;
     mapping(uint => User) public users;
@@ -108,13 +136,13 @@ contract SponsorMatrix {
     mapping(uint => uint) public matrixDirect; // Count of direct matrix referrals
     mapping(uint => uint[]) public directReferrals;
 
-    mapping(uint => SponsorStructure) public sponsorStructure;
+   
     // --- Community bonus accrual (pull-based) ---
     uint256 public constant ACC_PRECISION = 1e18;
     uint256 public communityAccPerUser;                 // global accumulator
     mapping(uint => uint256) public communityDebt;      // user snapshot
 
-     uint public lotteryPool;
+    uint public lotteryPool;
     address public lastLotteryWinner;
     uint public lastLotteryRun;
     uint public lotteryInterval = 1 days;
@@ -124,7 +152,7 @@ contract SponsorMatrix {
 
     // Events
     event Registration(address indexed user, address indexed sponsor, uint indexed userId, uint uplineId);
-    event Upgrade(address indexed user, uint indexed userId, uint packageLevel);
+    event Upgrade(address indexed user, uint indexed userId, uint packageLevel, string depositType);
     event IncomeDistributed(address indexed to, address indexed from, uint amount, uint packageLevel, uint incomeType);
     event LotteryReward(address indexed winner, uint indexed fromUserId, uint amount, uint timestamp);
     event CommunityBonusDistributed(uint amount, uint usersCount, uint perUser);
@@ -151,21 +179,138 @@ contract SponsorMatrix {
         }
         creator.totalDeposit = totalDeposit;
         addressToId[_creatorWallet] = defaultRefId;
+
+         for(uint j = 0; j < poolPackages.length; j++) {
+            userPooldtl[j][defaultRefId] = UserPool({
+                id: defaultRefId,
+                mainid: defaultRefId,
+                poolId: j,
+                parentId: 0,
+
+                bonusCount: 0,
+                nextPoolAmt: 0,
+                reTopupAmt: 0
+            });
+            poolUsers[j].push(defaultRefId);
+            userIdPerPool[j][defaultRefId].push(defaultRefId);
+        }
         
     }
+
+
+     function upgradePool(uint32 _userId) external {
+        User storage user = users[_userId];
+        require(user.account == msg.sender, "Not your account");
+        require(user.poollevel < 7, "At max level");
+        
+        uint nextLevel = user.poollevel;
+        uint packagePrice = poolPackages[nextLevel];
+        
+        // Transfer USDT for the next package
+        usdt.transferFrom(msg.sender, address(this), packagePrice);
+        
+        user.poollevel += 1;
+       
+        user.poolDeposit += packagePrice;
+         _placeInPool(nextLevel, _userId, packagePrice);
+            // add in Deposit 
+          user.deposits.push(Deposit({
+            amount: packagePrice,
+            withdrawn: 0,
+            start: block.timestamp,
+            depositType:2
+        }));
+
+        emit Upgrade(msg.sender, _userId, nextLevel + 1, "Pool");
+    }
+
     
+    function _placeInPool(uint256 poolId, uint32 userMainId, uint packagePrice) private {
+        require(poolId < poolPackages.length, "Invalid");
+        require(msg.value == poolPackages[poolId], "Incorrect amount");
+
+        uint [] memory usersLen = poolUsers[poolId];
+       
+        uint index = usersLen.length;               // current index for new user
+        uint newUserId = defaultRefId + uint(index);
+        poolUsers[poolId].push(newUserId);
+        // parent by formula
+        uint256 parentIndex = (index - 1) / 3;
+        uint parentId = usersLen[parentIndex];
+
+         userPooldtl[poolId][newUserId] = UserPool({
+                id: newUserId,
+                mainid: userMainId,
+                poolId: poolId,
+                parentId: parentId,
+                bonusCount: 0,
+                nextPoolAmt: 0,
+                reTopupAmt: 0
+            });
+            poolUsers[poolId].push(newUserId);
+            userIdPerPool[poolId][userMainId].push(newUserId);
+            userChildren[poolId][parentId].push(newUserId);
+            _distributePoolIncome( parentId, poolId, userMainId, packagePrice);
+    }
+    
+
+        function _distributePoolIncome( uint _parentId, uint _poolId, uint _userMainId, uint _amount) private {
+          if (_parentId == 0 || _parentId == defaultRefId) {
+            _sendToCreator(_amount);
+            return;
+        }
+        uint _amountPerLevel = _amount / 3;  
+
+        for(uint i=0; i<3; i++){
+           
+            UserPool storage userp = userPooldtl[_poolId][_parentId];
+            uint parentMainId = userp.mainid; //parent main id
+            if(userp.bonusCount<39)
+            {
+                if(userp.bonusCount<24){
+                   userp.bonusCount +=1;
+                   _payPoolIncome(parentMainId, _userMainId, _amountPerLevel, 1);
+                }
+                if(userp.bonusCount>=24 && userp.bonusCount<36){
+                    userp.bonusCount +=1;
+                    userp.nextPoolAmt += _amountPerLevel;
+                }
+                if(userp.bonusCount>=36 ){
+                    userp.bonusCount +=1;
+                    userp.reTopupAmt += _amountPerLevel;
+                }
+            }
+        }     
+  
+    }
+   
+   // Pay a booster slice and record bookkeeping.
+    function _payPoolIncome(uint receiverId, uint fromId, uint amount, uint packageLevel) private {
+        address to = users[receiverId].account;
+        usdt.transfer(to, amount);
+
+        UserIncome storage inc = userIncomes[receiverId];
+        inc.totalIncome += amount;
+        inc.poolIncome += amount;
+
+        incomeHistory[receiverId].push(Income({
+            fromUserId: fromId,
+            amount: amount,
+            packageLevel: packageLevel,
+            timestamp: block.timestamp,
+            incomeType: 10 // infintiy pool income
+        }));
+
+        emit IncomeDistributed(to, users[fromId].account, amount, packageLevel, 10);
+    }
+
+
     function _sendToCreator(uint _amount) private {
     require(creatorWallet != address(0),"fee addrs not set");
-    // 30% / 50% / 20% split
-    uint toCreator = (_amount * 50) / 100;
-  
-
-    // Handle integer-division rounding so total sent == _amount
-    uint sent = toCreator ;
-    uint remainder = _amount - sent;
-
+    // 100% split to creator
+    
     // Send dust to creator (you can pick any bucket)
-    usdt.transfer(creatorWallet, toCreator + remainder);
+    usdt.transfer(creatorWallet, _amount);
   
 
     // Bookkeeping for the full routed amount
@@ -212,7 +357,8 @@ contract SponsorMatrix {
         user.deposits.push(Deposit({
             amount: packages[0],
             withdrawn: 0,
-            start: block.timestamp
+            start: block.timestamp,
+            depositType:1
         }));
         // Distribute income
         uint totalPackagePrice = packages[0];
@@ -252,7 +398,8 @@ contract SponsorMatrix {
           user.deposits.push(Deposit({
             amount: packagePrice,
             withdrawn: 0,
-            start: block.timestamp
+            start: block.timestamp,
+            depositType:1
         }));
    
         // Distribute income
@@ -279,7 +426,7 @@ contract SponsorMatrix {
 
        
         
-        emit Upgrade(msg.sender, _userId, nextLevel + 1);
+        emit Upgrade(msg.sender, _userId, nextLevel + 1, "Slot");
     }
     
     function _applyGlobalCapping(uint _userId, uint _amount) internal view returns (uint) {
@@ -309,7 +456,7 @@ contract SponsorMatrix {
     }
 
 
-        function claimCommunity(uint _userId) external {
+    function claimCommunity(uint _userId) external {
             User storage u = users[_userId];
             require(u.id != 0, "User not found");
             require(u.account == msg.sender, "Not your account");
@@ -488,7 +635,7 @@ contract SponsorMatrix {
                     amount: _amount,
                     packageLevel: _packageLevel,
                     timestamp: block.timestamp,
-                    incomeType: 2
+                    incomeType: 2 // matrix income
                 }));
 
                 emit IncomeDistributed(up.account, users[_fromId].account, _amount, _packageLevel, 2);
@@ -548,7 +695,7 @@ contract SponsorMatrix {
             }
 
             // not eligible → try the next sponsor up
-            currentId = u.sponsorId;
+            currentId = u.uplineId;
             depth++;
         }
 
