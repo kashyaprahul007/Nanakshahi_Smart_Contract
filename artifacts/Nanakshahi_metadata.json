@@ -672,6 +672,25 @@
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "minPoolForGlbBooster",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "owner",
 				"outputs": [
@@ -1298,6 +1317,11 @@
 					},
 					{
 						"internalType": "uint256",
+						"name": "directPoolQualified",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
 						"name": "totalMatrixTeam",
 						"type": "uint256"
 					},
@@ -1365,11 +1389,11 @@
 	},
 	"sources": {
 		"contracts/modules/SponsorMatrix.sol": {
-			"keccak256": "0xe7a9b9afb1bd844ba16775ce57b1b4545459f52799b1844996bf448e670976a7",
+			"keccak256": "0xbc3d2a79964e1b5b14e28455a7e5eb327a5919ee98025a4814ec16ccf7046138",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://dcc9b4f05815101dff382147a78b5f51a1296dcae0bcb5cbc9de6fc44b7d3a99",
-				"dweb:/ipfs/QmPAtWa47iNHX6UsxU8hnfrDyyhugRjeY88dSZJgXDJAmR"
+				"bzz-raw://e06ec3ab40af429fddec851fec92be930e1f80be3492b1befcb7bdd1c00d062c",
+				"dweb:/ipfs/QmT8CB6BWkMiGqPEGqVRuqrDGgFwcg7UmNFNVtZLpxjin9"
 			]
 		}
 	},

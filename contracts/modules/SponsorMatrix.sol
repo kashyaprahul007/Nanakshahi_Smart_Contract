@@ -28,7 +28,7 @@ contract Nanakshahi {
 
     uint256 public constant PERCENTS_DIVIDER = 10000;
     uint256 public constant TIME_STEP = 1 days;
-    uint256 public constant ROI_CAP_MULTIPLIER = 25; // 2.5x
+    uint256 public constant ROI_CAP_MULTIPLIER = 15; // 1.5x
     uint256 public constant ROI_CAP_DIVIDER = 10;
     // Package prices in USDT (with 18 decimals)
 
@@ -50,10 +50,11 @@ contract Nanakshahi {
         102400 * 1e18,  // 102400$
         204800 * 1e18   // 204800$
     ];
-    uint[] public poolPackages = [25e18, 100e18, 400e18, 1600e18, 6400e18, 25600e18, 102400e18];
+    uint[] public poolPackages = [75e18, 300e18, 1200e18, 4800e18, 19200e18, 76800e18, 307200e18];
     uint[] public GlbBoosterPackages = [ 100e18, 200e18, 400e18, 800e18, 1600e18, 3200e18, 6400e18, 12800e18];
     uint[7] public minLevelForPool = [3, 5, 7, 9, 11, 13, 15];
     uint[8] public minLevelForGlbBooster = [4, 5, 6, 7, 8, 9, 10,11];
+    uint[8] public minPoolForGlbBooster = [0, 1, 1, 1, 1, 1, 1,1];
         //  User struct into basic info and relationships
     struct Deposit {
         uint256 amount;
@@ -71,6 +72,7 @@ contract Nanakshahi {
         uint uplineId;   // Placement in matrix
         uint level;      // Current package level (1-15)
         uint directTeam; // Direct referrals count
+        uint directPoolQualified; // Direct referrals count in infinity pool
         uint totalMatrixTeam; // Total users in matrix
         uint totalDeposit;
         uint poollevel;
@@ -195,6 +197,7 @@ contract Nanakshahi {
         creator.registrationTime = block.timestamp;
         creator.poollevel = 7;
         creator.boosterlevel = 8;
+        creator.directPoolQualified = 2;
         
         // Set initial deposit for creator
         uint totalDeposit = 0;
@@ -257,40 +260,40 @@ contract Nanakshahi {
 
     function RetopPoolByEarning(uint32 _userId, uint _poolId) external {
    
-    User storage user = users[_userId];
-    require(user.account == msg.sender, "Not your account");
-    require(user.poollevel < 7, "At max pool");
-    //require(_upgradeType == 1 || _upgradeType == 2, "Invalid upgrade type");
+        User storage user = users[_userId];
+        require(user.account == msg.sender, "Not your account");
+        require(user.poollevel < 7, "At max pool");
+        //require(_upgradeType == 1 || _upgradeType == 2, "Invalid upgrade type");
 
-    uint256 packagePrice;
+        uint256 packagePrice;
 
-    packagePrice = poolPackages[_poolId];
+        packagePrice = poolPackages[_poolId];
+    
+        UserPoolTopup storage top = userPooltopup[_poolId][_userId];
+        require(top.reTopupAmt >= packagePrice, "Not enough reTopup balance");
+
+        // Deduct balance
+        top.reTopupAmt -= packagePrice;
+
+        // Record deposit
+        user.poolDeposit += packagePrice;
+
+        // Place new entry in same pool
+        _placeInPool(_poolId, _userId, packagePrice);
+
+        // Log
+        user.deposits.push(Deposit({
+            amount: packagePrice,
+            withdrawn: 0,
+            start: block.timestamp,
+            depositType: 10 // Retopup via earning
+        }));
+
+        emit Upgrade(msg.sender, _userId, _poolId, "Pool ReTopup (Earning)");
+    
+
    
-    UserPoolTopup storage top = userPooltopup[_poolId][_userId];
-    require(top.reTopupAmt >= packagePrice, "Not enough reTopup balance");
-
-    // Deduct balance
-    top.reTopupAmt -= packagePrice;
-
-    // Record deposit
-    user.poolDeposit += packagePrice;
-
-    // Place new entry in same pool
-    _placeInPool(_poolId, _userId, packagePrice);
-
-    // Log
-    user.deposits.push(Deposit({
-        amount: packagePrice,
-        withdrawn: 0,
-        start: block.timestamp,
-        depositType: 10 // Retopup via earning
-    }));
-
-    emit Upgrade(msg.sender, _userId, _poolId, "Pool ReTopup (Earning)");
-   
-
-   
-}
+    }
     function upgradePoolByEarning(uint32 _userId, uint _poolId) external {
         // _upgradeType = 1 → Retopup (same pool)
         // _upgradeType = 2 → Upgrade to next pool
@@ -309,8 +312,8 @@ contract Nanakshahi {
         packagePrice = poolPackages[_poolId + 1];
         targetPool = _poolId + 1;
 
-        uint requiredLevel = minLevelForPool[_poolId]; 
-        require(user.level >= requiredLevel, "Upgrade your level first");
+        //uint requiredLevel = minLevelForPool[_poolId]; 
+       // require(user.level >= requiredLevel, "Upgrade your level first");
 
         // Check internal funds
         UserPoolTopup storage top = userPooltopup[_poolId][_userId];
@@ -359,12 +362,20 @@ contract Nanakshahi {
             require(user.poollevel == nextPool, "Buy previous pool first");
         }
         require(!userHasPool[_userId][nextPool], "Pool already purchased");
+ 
+       
 
-        uint packagePrice = poolPackages[nextLevel];
+        uint packagePrice = poolPackages[nextPool];
         
         // Transfer USDT for the next package
         usdt.transferFrom(msg.sender, address(this), packagePrice);
         
+        if(nextPool == 0){
+            uint _sponsorId = user.sponsorId;
+            if(users[_sponsorId].registrationTime + 172800 <= block.timestamp){
+                 users[_sponsorId].directPoolQualified += 1;
+            }
+        }
         user.poollevel += 1;
         userHasPool[_userId][nextPool] = true;
         user.poolDeposit += packagePrice;
@@ -377,7 +388,7 @@ contract Nanakshahi {
             depositType:10
         }));
 
-        emit Upgrade(msg.sender, _userId, nextLevel + 1, "Pool");
+        emit Upgrade(msg.sender, _userId, nextPool + 1, "Pool");
     }
 
     
@@ -417,9 +428,9 @@ contract Nanakshahi {
 
         uint nextPool = user.boosterlevel; // next pool to buy (0-based index)
         uint requiredLevel = minLevelForGlbBooster[nextPool]; // required main level for this pool
-
+        uint requiredPool = minPoolForGlbBooster[nextPool]; // required main level for this pool
         //  Check 1: Ensure user has required main level
-        require(user.level >= requiredLevel, "Upgrade your level first");
+        require(user.level >= requiredLevel && user.poollevel >= requiredPool, "Upgrade Slot and Pool");
 
         //  Check 2: Must buy sequentially (can't skip pools)
         if (nextPool > 0) {
@@ -461,14 +472,61 @@ contract Nanakshahi {
         uint256 parentIndex = (index - 1) / 3;
         uint parentId = usersLen[parentIndex];
 
-         userBoosterdtl[poolId][userMainId] = UserBooster({
+        userBoosterdtl[poolId][userMainId] = UserBooster({
                 id: userMainId,               
                 poolId: poolId,
                 parentId: parentId,
                 bonusCount: 0
             });
-            userBoosterChildren[poolId][parentId].push(userMainId);
+        userBoosterChildren[poolId][parentId].push(userMainId);
+
+        if (parentId == 0 || parentId == defaultRefId) {
+            _sendToCreator(packagePrice);
+            return;
+        }  
+        UserBooster storage userB = userBoosterdtl[poolId][parentId];
+        if( userB.bonusCount<3)
+        {
+            userB.bonusCount +=1; 
+            _payPoolIncome(parentId, userMainId, packagePrice, 1, 11);  
+        }
+        else{
+            _sendToCreator(packagePrice);
+            return;
+        }
+       
            // _distributePoolIncome( parentId, poolId, userMainId, packagePrice);
+    }
+    function _distributeBoosterlIncome( uint _parentId, uint _poolId, uint _userMainId, uint _amount) private {
+        if (_parentId == 0 || _parentId == defaultRefId) {
+            _sendToCreator(_amount);
+            return;
+        }        
+        uint _amountPerLevel = _amount / 3;  
+
+        for(uint i=0; i<3; i++){
+           
+            UserPool storage userp = userPooldtl[_poolId][_parentId];
+            uint parentMainId = userp.mainid; //parent main id
+            if(userp.bonusCount<39)
+            {
+                if(userp.bonusCount<24){
+                   userp.bonusCount +=1;   
+                   _payPoolIncome(parentMainId, _userMainId, _amountPerLevel, 1, 10);
+                }
+                if(userp.bonusCount>=24 && userp.bonusCount<36){
+                    userp.bonusCount +=1;
+                    userPooltopup[_poolId][parentMainId].nextPoolAmt += _amountPerLevel;
+                   // userp.nextPoolAmt += _amountPerLevel;
+                }
+                if(userp.bonusCount>=36 ){
+                    userp.bonusCount +=1;
+                     userPooltopup[_poolId][parentMainId].reTopupAmt += _amountPerLevel;
+                   // userp.reTopupAmt += _amountPerLevel;
+                }
+            }
+        }     
+  
     }
 
     function _distributePoolIncome( uint _parentId, uint _poolId, uint _userMainId, uint _amount) private {
@@ -486,7 +544,7 @@ contract Nanakshahi {
             {
                 if(userp.bonusCount<24){
                    userp.bonusCount +=1;
-                   _payPoolIncome(parentMainId, _userMainId, _amountPerLevel, 1);
+                   _payPoolIncome(parentMainId, _userMainId, _amountPerLevel, 1, 10);
                 }
                 if(userp.bonusCount>=24 && userp.bonusCount<36){
                     userp.bonusCount +=1;
@@ -504,19 +562,26 @@ contract Nanakshahi {
     }
    
    // Pay a booster slice and record bookkeeping.
-    function _payPoolIncome(uint receiverId, uint fromId, uint amount, uint packageLevel) private {
+    function _payPoolIncome(uint receiverId, uint fromId, uint amount, uint packageLevel, uint _incomeType) private {
        
 
         UserIncome storage inc = userIncomes[receiverId];
         inc.totalIncome += amount;
-        inc.poolIncome += amount;
+        if(_incomeType == 10){
+             inc.poolIncome += amount;
+        }
+        if(_incomeType == 11){
+             inc.boosterIncome += amount;
+        }
+        
+       
 
         incomeHistory[receiverId].push(Income({
             fromUserId: fromId,
             amount: amount,
             packageLevel: packageLevel,
             timestamp: block.timestamp,
-            incomeType: 10 // infintiy pool income
+            incomeType: _incomeType // infintiy pool income
         }));
 
         address to = users[receiverId].account;
@@ -524,7 +589,7 @@ contract Nanakshahi {
         usdt.transfer(to, netamount);
         _sendToCreator((amount*5) / 100);
 
-        emit IncomeDistributed(to, users[fromId].account, amount, packageLevel, 10);
+        emit IncomeDistributed(to, users[fromId].account, amount, packageLevel, _incomeType);
     }
 
 
@@ -556,6 +621,7 @@ contract Nanakshahi {
         // Transfer USDT for the first package
         usdt.transferFrom(msg.sender, address(this), packages[0]);
         
+        
         // Create new user
         uint newUserId = defaultRefId + (totalUsers * 5);
         addressToId[msg.sender] = newUserId;
@@ -585,18 +651,19 @@ contract Nanakshahi {
         }));
         // Distribute income
         uint totalPackagePrice = packages[0];
-        uint creatorShare = totalPackagePrice * 10 / 100; // 10% to creator
-        uint remainingAmount = totalPackagePrice * 35 / 100;    // 35% distributable
-        lotteryPool += totalPackagePrice * 5 / 100;
+        uint creatorShare = totalPackagePrice * 5 / 100; // 5% to creator
+        uint remainingAmount = totalPackagePrice * 60 / 100;    // 35% distributable
+        /*5 % each for weekly Contest and Roaylty*/
+       // lotteryPool += totalPackagePrice * 5 / 100;
         //_autoTriggerLottery();
-        uint communityShare = totalPackagePrice * 50 / 100;
+        uint communityShare = totalPackagePrice * 25 / 100;
             // 9) accrue community bonus (no O(N) loop; users claim via claimCommunity)
         _accrueCommunityBonus(communityShare);
           
         // Send creator share
         _sendToCreator(creatorShare);
         
-        // 30% to sponsor as first level income
+        // 60% to sponsor as first level income
         _distributeSponsorIncome(user.sponsorId, newUserId, remainingAmount, 1);
         
         totalUsers += 1;
@@ -657,11 +724,15 @@ contract Nanakshahi {
     UserIncome storage income = userIncomes[_userId];
 
     // If user has last package, allow unlimited non-ROI income
-    if (user.level == packages.length) {
-        return _amount;
-    }
-
-   uint maxIncome = (user.totalDeposit * ROI_CAP_MULTIPLIER) / ROI_CAP_DIVIDER;
+    // if (user.level == packages.length) {
+    //     return _amount;
+    // }
+   // uint256 public constant ROI_CAP_MULTIPLIER = 15;
+   uint _ROI_CAP_MULTIPLIER = ROI_CAP_MULTIPLIER;
+   if(user.directPoolQualified>1){
+    _ROI_CAP_MULTIPLIER = 20;
+   }
+   uint maxIncome = (user.totalDeposit * _ROI_CAP_MULTIPLIER) / ROI_CAP_DIVIDER;
 
     if (income.totalIncome >= maxIncome) return 0;
 
