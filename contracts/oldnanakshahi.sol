@@ -1,16 +1,182 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
-import "../interfaces/IERC20.sol";
-import "./Storage.sol";
+pragma solidity ^0.8.20;
 
-contract Nanakshahi is Storage{
-   
-    
-    constructor() {
-       
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address to, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+contract Nanakshahi {
+    IERC20 public usdt;
+    address public owner;
+    address public creatorWallet;   
+    address public systemMaintance;
+    address public teamDevelopment;
+    uint public defaultRefId;
+    uint public totalUsers;
+    uint private constant maxLayers = 15;
+    // Package prices in USDT (with 18 decimals)
+    uint256 public constant PERCENTS_DIVIDER = 10000;
+    uint256 public constant TIME_STEP = 1 days;
+    uint256 public constant ROI_CAP_MULTIPLIER = 25; // 2.5x
+    uint256 public constant ROI_CAP_DIVIDER = 10;
+
+    uint[] public packages = [
+        15 * 1e18,      // 15$
+        25 * 1e18,      // 25$
+        50 * 1e18,      // 50$
+        100 * 1e18,     // 100$
+        200 * 1e18,     // 200$
+        400 * 1e18,     // 400$
+        800 * 1e18,     // 800$
+        1600 * 1e18,    // 1600$
+        3200 * 1e18,    // 3200$
+        6400 * 1e18,    // 6400$
+        12800 * 1e18,   // 12800$
+        25600 * 1e18,   // 25600$
+        51200 * 1e18,   // 51200$
+        102400 * 1e18,  // 102400$
+        204800 * 1e18   // 204800$
+    ];
+
+        //  User struct into basic info and relationships
+    struct Deposit {
+        uint256 amount;
+        uint256 withdrawn;
+        uint256 start;    
     }
 
+    struct User {
+        address account;
+        Deposit[] deposits;
+        uint256 checkpoint;
+        uint id;
+        uint sponsorId;  // Referrer
+        uint uplineId;   // Placement in matrix
+        uint level;      // Current package level (1-15)
+        uint directTeam; // Direct referrals count
+        uint totalMatrixTeam; // Total users in matrix
+        uint totalDeposit;
+        uint registrationTime;
+
+    }
+     // struct for bonus calc
+    struct UserIncome {
+        uint totalIncome;
+        uint sponsorIncome;
+        uint matrixIncome;
+        uint levelBoosterIncome;
+        uint levelIncome;
+        uint royaltyIncome;
+        uint royaltyIncomeClaimed; // Track claimed royalty for capping
+        uint communityIncome;        // <-- NEW: total community bonus claimed
+
+    }
+
+    struct Income {
+        uint fromUserId;
+        uint amount;
+        uint packageLevel;
+        uint timestamp;
+        uint incomeType; // 1: Sponsor, 2: Matrix, 3: Level, 4: Level Booster, 5: Creator, 6: Royalty , 7 Lottery  , 8 Roi Income
+    }
+    struct SponsorStructure{
+        uint package;
+        uint sponsorIncome;
+        uint lvlUpline;
+        uint lvlUplineIncome;
+        uint splitUpline;
+        uint splitUplineIncome;
+    }
+
+    mapping(address => uint) public addressToId;
+    mapping(uint => User) public users;
+    mapping(uint => UserIncome) public userIncomes; // New mapping for income data
+    mapping(uint => Income[]) public incomeHistory;
+    mapping(uint => mapping(uint => uint[])) public teams; // Matrix team structure by level
+    mapping(uint => uint) public matrixDirect; // Count of direct matrix referrals
+    mapping(uint => uint[]) public directReferrals;
+
+    mapping(uint => SponsorStructure) public sponsorStructure;
+    // --- Community bonus accrual (pull-based) ---
+    uint256 public constant ACC_PRECISION = 1e18;
+    uint256 public communityAccPerUser;                 // global accumulator
+    mapping(uint => uint256) public communityDebt;      // user snapshot
+
+     uint public lotteryPool;
+    address public lastLotteryWinner;
+    uint public lastLotteryRun;
+    uint public lotteryInterval = 1 days;
+    uint[] public registeredUserIds;
+    uint private nonce; // add this at the top of your contract
+    uint private lastWinnerId;
+
+    // Events
+    event Registration(address indexed user, address indexed sponsor, uint indexed userId, uint uplineId);
+    event Upgrade(address indexed user, uint indexed userId, uint packageLevel);
+    event IncomeDistributed(address indexed to, address indexed from, uint amount, uint packageLevel, uint incomeType);
+    event LotteryReward(address indexed winner, uint indexed fromUserId, uint amount, uint timestamp);
+    event CommunityBonusDistributed(uint amount, uint usersCount, uint perUser);
     
+    constructor(address _usdt,address _creatorWallet, address _systemMaintance , address _teamDevelopment) {
+        usdt = IERC20(_usdt);
+        creatorWallet = _creatorWallet;
+        systemMaintance = _systemMaintance;
+        teamDevelopment = _teamDevelopment;
+        defaultRefId = 1000;
+        totalUsers = 1;
+        
+        // Initialize creator account
+        User storage creator = users[defaultRefId];
+        creator.account = _creatorWallet;
+        creator.id = defaultRefId;
+        creator.level = 15; // Creator starts at max level
+        creator.registrationTime = block.timestamp;
+        
+        // Set initial deposit for creator
+        uint totalDeposit = 0;
+        for(uint i = 0; i < 15; i++) {
+            totalDeposit += packages[i];
+        }
+        creator.totalDeposit = totalDeposit;
+        addressToId[_creatorWallet] = defaultRefId;
+        
+    }
+    
+    function _sendToCreator(uint _amount) private {
+    require(creatorWallet != address(0),"fee addrs not set");
+    // 30% / 50% / 20% split
+    uint toCreator = (_amount * 50) / 100;
+  
+
+    // Handle integer-division rounding so total sent == _amount
+    uint sent = toCreator ;
+    uint remainder = _amount - sent;
+
+    // Send dust to creator (you can pick any bucket)
+    usdt.transfer(creatorWallet, toCreator + remainder);
+  
+
+    // Bookkeeping for the full routed amount
+    UserIncome storage creatorIncome = userIncomes[defaultRefId];
+    creatorIncome.totalIncome += _amount;
+
+    incomeHistory[defaultRefId].push(Income({
+        fromUserId: 0,
+        amount: _amount,
+        packageLevel: 0,
+        timestamp: block.timestamp,
+        incomeType: 5
+    }));
+}
    
      function register(uint _sponsorId) external {
         require(addressToId[msg.sender] == 0, "Already registered");
@@ -19,10 +185,8 @@ contract Nanakshahi is Storage{
         // Transfer USDT for the first package
         usdt.transferFrom(msg.sender, address(this), packages[0]);
         
-        
         // Create new user
-        uint newUserId = defaultRefId + totalUsers ;
-        totalUsers += 1;
+        uint newUserId = defaultRefId + (totalUsers * 5);
         addressToId[msg.sender] = newUserId;
         
         User storage user = users[newUserId];
@@ -45,26 +209,25 @@ contract Nanakshahi is Storage{
         user.deposits.push(Deposit({
             amount: packages[0],
             withdrawn: 0,
-            start: block.timestamp,
-            depositType:1
+            start: block.timestamp
         }));
         // Distribute income
         uint totalPackagePrice = packages[0];
-        uint creatorShare = totalPackagePrice * 5 / 100; // 5% to creator
-        uint remainingAmount = totalPackagePrice * 60 / 100;    // 60% distributable
-        /*5 %  for weekly Contest and Roaylty */
-      
-        uint communityShare = totalPackagePrice * 25 / 100;
+        uint creatorShare = totalPackagePrice * 10 / 100; // 10% to creator
+        uint remainingAmount = totalPackagePrice * 35 / 100;    // 35% distributable
+        lotteryPool += totalPackagePrice * 5 / 100;
+        //_autoTriggerLottery();
+        uint communityShare = totalPackagePrice * 50 / 100;
             // 9) accrue community bonus (no O(N) loop; users claim via claimCommunity)
         _accrueCommunityBonus(communityShare);
           
         // Send creator share
         _sendToCreator(creatorShare);
         
-        // 60% to sponsor as first level income
+        // 30% to sponsor as first level income
         _distributeSponsorIncome(user.sponsorId, newUserId, remainingAmount, 1);
         
-      
+        totalUsers += 1;
         
         emit Registration(msg.sender, users[_sponsorId].account, newUserId, user.uplineId);
     }
@@ -86,8 +249,7 @@ contract Nanakshahi is Storage{
           user.deposits.push(Deposit({
             amount: packagePrice,
             withdrawn: 0,
-            start: block.timestamp,
-            depositType:1
+            start: block.timestamp
         }));
    
         // Distribute income
@@ -95,7 +257,7 @@ contract Nanakshahi is Storage{
         // lotteryPool += packagePrice * 5 / 100;
         //_autoTriggerLottery();
 
-         uint communityShare = packagePrice * 25 / 100;
+         uint communityShare = packagePrice * 35 / 100;
         _accrueCommunityBonus(communityShare);
 
         // Send creator share
@@ -103,18 +265,18 @@ contract Nanakshahi is Storage{
 
         // sponsor income 15% for all package so call it once
         // nextLevel is package, when 1 then its mean 2nd package
-        uint sponsorIncome = packagePrice * 20 / 100;
+        uint sponsorIncome = packagePrice * 15 / 100;
         _distributeSponsorIncome(user.sponsorId, _userId, sponsorIncome, nextLevel + 1);
 
-        uint uplineIncome = packagePrice * 20 / 100;
+        uint uplineIncome = packagePrice * 15 / 100;
         _distributeMatrixIncome(user.uplineId, _userId, uplineIncome, nextLevel + 1);
 
-        uint boosterIncome = packagePrice * 20 / 100;
+        uint boosterIncome = packagePrice * 15 / 100;
         _distributeLevelBoosterIncome(user.uplineId, _userId, boosterIncome, nextLevel + 1, nextLevel);
 
        
         
-        emit Upgrade(msg.sender, _userId, nextLevel + 1, "Slot");
+        emit Upgrade(msg.sender, _userId, nextLevel + 1);
     }
     
     function _applyGlobalCapping(uint _userId, uint _amount) internal view returns (uint) {
@@ -122,15 +284,11 @@ contract Nanakshahi is Storage{
     UserIncome storage income = userIncomes[_userId];
 
     // If user has last package, allow unlimited non-ROI income
-    // if (user.level == packages.length) {
-    //     return _amount;
-    // }
-   // uint256 public constant ROI_CAP_MULTIPLIER = 15;
-   uint _ROI_CAP_MULTIPLIER = ROI_CAP_MULTIPLIER;
-   if(user.directPoolQualified>1){
-      _ROI_CAP_MULTIPLIER = 20;
-   }
-   uint maxIncome = (user.totalDeposit * _ROI_CAP_MULTIPLIER) / ROI_CAP_DIVIDER;
+    if (user.level == packages.length) {
+        return _amount;
+    }
+
+   uint maxIncome = (user.totalDeposit * ROI_CAP_MULTIPLIER) / ROI_CAP_DIVIDER;
 
     if (income.totalIncome >= maxIncome) return 0;
 
@@ -148,7 +306,7 @@ contract Nanakshahi is Storage{
     }
 
 
-    function claimCommunity(uint _userId) external {
+        function claimCommunity(uint _userId) external {
             User storage u = users[_userId];
             require(u.id != 0, "User not found");
             require(u.account == msg.sender, "Not your account");
@@ -250,33 +408,33 @@ contract Nanakshahi is Storage{
         
         User storage sponsor = users[_sponsorId];
         
-        // if (_packageLevel != 1)
-        // {
-        //     if(sponsor.directTeam < 2)
-        //     {
-        //             _sendToCreator(_amount);
-        //             return;
-        //     }
-        // }
+        if (_packageLevel != 1)
+        {
+            if(sponsor.directTeam < 2)
+            {
+                    _sendToCreator(_amount);
+                    return;
+            }
+        }
     
 
-        usdt.transfer(sponsor.account, _amount);
-        
-        // Update income in separate mapping
-        UserIncome storage sponsorIncome = userIncomes[_sponsorId];
-        sponsorIncome.totalIncome += _amount;
-        sponsorIncome.sponsorIncome += _amount;
-        
-        // Record income
-        incomeHistory[_sponsorId].push(Income({
-            fromUserId: _fromId,
-            amount: _amount,
-            packageLevel: _packageLevel,
-            timestamp: block.timestamp,
-            incomeType: 1 // Sponsor income
-        }));
-        
-        emit IncomeDistributed(sponsor.account, users[_fromId].account, _amount, _packageLevel, 1);
+            usdt.transfer(sponsor.account, _amount);
+            
+            // Update income in separate mapping
+            UserIncome storage sponsorIncome = userIncomes[_sponsorId];
+            sponsorIncome.totalIncome += _amount;
+            sponsorIncome.sponsorIncome += _amount;
+            
+            // Record income
+            incomeHistory[_sponsorId].push(Income({
+                fromUserId: _fromId,
+                amount: _amount,
+                packageLevel: _packageLevel,
+                timestamp: block.timestamp,
+                incomeType: 1 // Sponsor income
+            }));
+            
+            emit IncomeDistributed(sponsor.account, users[_fromId].account, _amount, _packageLevel, 1);
        
     }
     
@@ -287,24 +445,29 @@ contract Nanakshahi is Storage{
         // first need to get correct upline
    
         //)
-        //uint depth = 1;
+        uint depth = 1;
         if(_uplineId == defaultRefId || _uplineId == 0)
         {
             _sendToCreator(_amount);
             return;
-        }       
-        uint targetId = _uplineId;
-        for (uint i = 1; i < _packageLevel; ++i) {
-            targetId = users[targetId].uplineId;
-            if (targetId == 0 || targetId == defaultRefId) {
-                // No ancestor at that depth
+        }
+        uint uplineId_ = _uplineId;
+        while(depth < _packageLevel)
+        {
+            depth++;
+            uplineId_ = users[uplineId_].uplineId;
+
+            if(uplineId_ == defaultRefId || uplineId_ == 0)
+            {   
+                depth = _packageLevel;
                 _sendToCreator(_amount);
+              
                 return;
             }
         }
-        uint currentId = targetId;
-        uint layer = 0;
-        while (currentId != 0 && currentId != defaultRefId && layer < maxLayers) {
+        uint currentId = uplineId_;
+        depth = 0;
+        while (currentId != 0 && currentId != defaultRefId && depth < maxLayers) {
             User storage up = users[currentId];
 
             // eligibility: at least 2 directs AND level >= purchased level
@@ -322,7 +485,7 @@ contract Nanakshahi is Storage{
                     amount: _amount,
                     packageLevel: _packageLevel,
                     timestamp: block.timestamp,
-                    incomeType: 2 // matrix income
+                    incomeType: 2
                 }));
 
                 emit IncomeDistributed(up.account, users[_fromId].account, _amount, _packageLevel, 2);
@@ -331,7 +494,7 @@ contract Nanakshahi is Storage{
 
             // move up one level in the matrix
             currentId = up.uplineId;
-            layer++;
+            depth++;
         }
         // nobody in the matrix chain qualified → send to creator/fees
         _sendToCreator(_amount);
@@ -382,7 +545,7 @@ contract Nanakshahi is Storage{
             }
 
             // not eligible → try the next sponsor up
-            currentId = u.uplineId;
+            currentId = u.sponsorId;
             depth++;
         }
 
@@ -391,93 +554,63 @@ contract Nanakshahi is Storage{
     }
 
     
-    function _distributeLevelBoosterIncome(uint _startId, uint _fromId, uint _amount,uint _packageLevel,uint _maxLevel) private {
-        if (_startId == 0 || _startId == defaultRefId || _maxLevel == 0) {
+    function _distributeLevelBoosterIncome(
+        uint _startId,
+        uint _fromId,
+        uint _amount,
+        uint _packageLevel,
+        uint _maxLevel
+    ) private {
+        if (_startId == 0 || _startId == defaultRefId) {
             _sendToCreator(_amount);
             return;
         }
 
-        //uint levelsToDistribute = _maxLevel; 
-        uint amountPerLevel = _amount / _maxLevel;
-        uint remainder = _amount - (amountPerLevel * _maxLevel);
-        //uint spillover = 1;
-       // uint baselineId = _startId;
+        uint levelsToDistribute = _maxLevel; // or cap to 4 if desired
+        if (levelsToDistribute == 0) {
+            _sendToCreator(_amount);
+            return;
+        }
 
-        uint currentId = _startId;
-        uint totalDistributed = 0;
-        uint accumulatedShares = 1; // starts with 1x share
+        uint amountPerLevel = _amount / levelsToDistribute;
+        uint remainder = _amount - (amountPerLevel * levelsToDistribute);
+        uint spilover = 1;
+        uint baselineId = _startId;
 
-        for (uint i = 0; i < _maxLevel; i++) 
+        for (uint i = 0; i < levelsToDistribute; i++) 
         {
-              // If we run out of uplines
-            if (currentId == 0 || currentId == defaultRefId) {
-                // Send any undistributed shares to creator
-                uint remaining = _amount - totalDistributed;
-                if (remaining > 0) _sendToCreator(remaining);
-                return;
-            }
-
-            User storage up = users[currentId];
-
-            if (up.level >= _packageLevel) {
-                // Qualified: give all accumulated shares to this person
-                uint payout = amountPerLevel * accumulatedShares;
-
-                _payLevelBooster(currentId, _fromId, payout, _packageLevel);
-
-                totalDistributed += payout;
-                accumulatedShares = 1; // reset spillover
-            } else {
-                // Not qualified → roll share upward
-                accumulatedShares++;
-            }
-
-            // Move to next upline
-            currentId = up.uplineId;
-
-
             //uint receiverId = baselineId;// _findEligibleSponsor(baselineId, _packageLevel);
             //User storage u = users[baselineId];
-
-            //prev code
-            // if (currentId != 0 && currentId != defaultRefId) 
-            // {
-            //     if(users[currentId].level >= _packageLevel)
-            //     {   
-            //         for(uint j=0; j<spillover; j++)
-            //         {
-            //             _payLevelBooster(currentId, _fromId, amountPerLevel , _packageLevel); 
+            if (baselineId != 0 && baselineId != defaultRefId) 
+            {
+                if(users[baselineId].level >= _packageLevel)
+                {   
+                    for(uint j=0; j<spilover; j++)
+                    {
+                        _payLevelBooster(baselineId, _fromId, amountPerLevel , _packageLevel); 
                         
-            //         }
-            //         currentId = users[currentId].uplineId;
-            //         spillover = 1;
-            //     }
-            //     else 
-            //     {
-            //         currentId = users[currentId].uplineId;
-            //         spillover++;
-            //     }
+                    }
+                    baselineId = users[baselineId].uplineId;
+                    spilover = 1;
+                }
+                else 
+                {
+                    baselineId = users[baselineId].uplineId;
+                    spilover++;
+                }
     
-            // }
+            }
            
            
-            // if (currentId == 0 || currentId == defaultRefId) {
-            //     _sendToCreator(amountPerLevel);
-            // } 
+            if (baselineId == 0 || baselineId == defaultRefId) {
+                _sendToCreator(amountPerLevel);
+            } 
        
         }
 
-        // If loop finished but still some unassigned shares, send to creator
-        uint remainingAfterLoop = _amount - totalDistributed;
-        if (remainingAfterLoop > 0) {
-            _sendToCreator(remainingAfterLoop);
-        }
-
-        // Add remainder (due to division rounding)
         if (remainder > 0) {
             _sendToCreator(remainder);
         }
-       
     }
    
    // Pay a booster slice and record bookkeeping.

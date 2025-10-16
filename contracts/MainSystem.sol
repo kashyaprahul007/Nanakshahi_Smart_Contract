@@ -1,17 +1,69 @@
-// MainSystem.sol
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.30;
 
-import "./core/Ownable.sol";
-import "./core/Storage.sol";
-import "./core/Utils.sol";
+
+//import "./core/Ownable.sol";
+import "./modules/Storage.sol";
+
 import "./modules/ContestRoyalty.sol";
 import "./modules/SponsorMatrix.sol";
 import "./modules/InfinityPool.sol";
 
-contract MainSystem is Ownable, Storage, ContestRoyalty, SponsorMatrix2, PoolMatrix3 {
-    using Utils for uint;  // now Utils functions available globally
+contract MainSystem is Storage, ContestRoyalty, Nanakshahi {
+    
 
-    constructor() {
-        // everything initializes
+     constructor(address _usdt, address _creatorWallet) {
+       usdt = IERC20(_usdt);
+        creatorWallet = _creatorWallet;
+    
+        defaultRefId = 1000;
+        totalUsers = 1;
+        
+        // Initialize creator account
+        User storage creator = users[defaultRefId];
+        creator.account = _creatorWallet;
+        creator.id = defaultRefId;
+        creator.level = 15; // Creator starts at max level
+        creator.registrationTime = block.timestamp;
+        creator.poollevel = 7;
+        creator.boosterlevel = 8;
+        creator.directPoolQualified = 2;
+        
+        // Set initial deposit for creator
+        uint totalDeposit = 0;
+        for(uint i = 0; i < 15; i++) {
+            totalDeposit += packages[i];
+        }
+        creator.totalDeposit = totalDeposit;
+        addressToId[_creatorWallet] = defaultRefId;
+
+        totalDeposit = 0;
+        for(uint j = 0; j < poolPackages.length; j++) {
+            totalDeposit += poolPackages[j];
+            userPooldtl[j][defaultRefId] = UserPool({
+                id: defaultRefId,
+                mainid: defaultRefId,
+                poolId: j,
+                parentId: 0,
+                bonusCount: 0
+            });
+            poolUsers[j].push(defaultRefId);
+            userIdPerPool[j][defaultRefId].push(defaultRefId);
+        }
+        creator.poolDeposit = totalDeposit;
+
+        totalDeposit =0;
+         for(uint k = 0; k < 8; k++) {
+             totalDeposit += glbBoosterPackages[k];
+            userBoosterdtl[k][defaultRefId] = UserBooster({
+                id: defaultRefId,              
+                poolId: k,
+                parentId: 0,
+                bonusCount: 0
+            });
+            boosterUsers[k].push(defaultRefId);
+            
+        }
+       creator.boosterDeposit = totalDeposit;
     }
 }

@@ -1,6 +1,6 @@
 {
 	"compiler": {
-		"version": "0.8.20+commit.a1b79de6"
+		"version": "0.8.30+commit.73712a01"
 	},
 	"language": "Solidity",
 	"output": {
@@ -14,19 +14,124 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "usersCount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUser",
+						"type": "uint256"
+					}
+				],
+				"name": "CommunityBonusDistributed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
 						"indexed": true,
 						"internalType": "address",
-						"name": "previousOwner",
+						"name": "to",
 						"type": "address"
 					},
 					{
 						"indexed": true,
 						"internalType": "address",
-						"name": "newOwner",
+						"name": "from",
 						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "packageLevel",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "incomeType",
+						"type": "uint256"
 					}
 				],
-				"name": "OwnershipTransferred",
+				"name": "IncomeDistributed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "winner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "fromUserId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "LotteryReward",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "user",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "sponsor",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "uplineId",
+						"type": "uint256"
+					}
+				],
+				"name": "Registration",
 				"type": "event"
 			},
 			{
@@ -58,6 +163,31 @@
 					}
 				],
 				"name": "RewardClaimed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "level",
+						"type": "string"
+					}
+				],
+				"name": "RewardSent",
 				"type": "event"
 			},
 			{
@@ -101,6 +231,80 @@
 						"type": "address"
 					},
 					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "packageLevel",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "depositType",
+						"type": "string"
+					}
+				],
+				"name": "Upgrade",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint8",
+						"name": "matrixId",
+						"type": "uint8"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint32",
+						"name": "userId",
+						"type": "uint32"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "user",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint32",
+						"name": "parentId",
+						"type": "uint32"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "parentAddr",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint8",
+						"name": "position",
+						"type": "uint8"
+					}
+				],
+				"name": "UserJoined",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "user",
+						"type": "address"
+					},
+					{
 						"indexed": false,
 						"internalType": "string",
 						"name": "period",
@@ -118,7 +322,72 @@
 			},
 			{
 				"inputs": [],
+				"name": "ACC_PRECISION",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "MONTH_DURATION",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "PERCENTS_DIVIDER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "ROI_CAP_DIVIDER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "ROI_CAP_MULTIPLIER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "TIME_STEP",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -170,6 +439,32 @@
 			},
 			{
 				"inputs": [],
+				"name": "communityAccPerUser",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "creatorWallet",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "currentMonthlyRound",
 				"outputs": [
 					{
@@ -184,6 +479,19 @@
 			{
 				"inputs": [],
 				"name": "currentWeeklyRound",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "defaultRefId",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -233,6 +541,25 @@
 						"internalType": "bool",
 						"name": "roundClosed",
 						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "glbBoosterPackages",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -368,6 +695,63 @@
 						"type": "uint256"
 					}
 				],
+				"name": "minLevelForGlbBooster",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "minLevelForPool",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "minPoolForGlbBooster",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
 				"name": "monthlyRounds",
 				"outputs": [
 					{
@@ -410,13 +794,38 @@
 				"type": "function"
 			},
 			{
-				"inputs": [],
-				"name": "owner",
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "packages",
 				"outputs": [
 					{
-						"internalType": "address",
+						"internalType": "uint256",
 						"name": "",
-						"type": "address"
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "poolPackages",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -477,14 +886,72 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "registeredUserIds",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "systemMaintance",
+				"outputs": [
+					{
 						"internalType": "address",
-						"name": "newOwner",
+						"name": "",
 						"type": "address"
 					}
 				],
-				"name": "transferOwnership",
-				"outputs": [],
-				"stateMutability": "nonpayable",
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "teamDevelopment",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "totalUsers",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "usdt",
+				"outputs": [
+					{
+						"internalType": "contract IERC20",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -552,32 +1019,41 @@
 		"compilationTarget": {
 			"contracts/modules/ContestRoyalty.sol": "ContestRoyalty"
 		},
-		"evmVersion": "shanghai",
+		"evmVersion": "prague",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
 		},
 		"optimizer": {
-			"enabled": false,
+			"enabled": true,
 			"runs": 200
 		},
-		"remappings": []
+		"remappings": [],
+		"viaIR": true
 	},
 	"sources": {
-		"contracts/core/Ownable.sol": {
-			"keccak256": "0xda314117f7c8120d1e812c6be4c80d14b3dcfb3f5dbfcadd268a72a35c003c39",
+		"contracts/interfaces/IERC20.sol": {
+			"keccak256": "0xa7e5d754453950a499a3cb218473edcc38ea213d79791008dea4e7f2bde73113",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://f762b988432b55051e66b80569e1c77e2ebfa5832f6e415a7c432edd47c4f4e9",
-				"dweb:/ipfs/Qmb8zgGDFSR9kNR7knYfLLNbbLCSuNizo18bT1HedzTwrN"
+				"bzz-raw://e1fb6c03bf6941a63ed5dc9853f3e0d0024403c02e887ae46ee97d51ee5c2dea",
+				"dweb:/ipfs/QmVHwjNpJwPXA6i2nqMEm39jbMGGppfh7JszXs7aWNU5n3"
 			]
 		},
 		"contracts/modules/ContestRoyalty.sol": {
-			"keccak256": "0xb1bfe94c2b8b88874c57154212c4182303c7fb3123f552e849605b06de4c0bd5",
+			"keccak256": "0x08f7a153cd620ea6fe4f3d79339dd2027b874cf1ce466abff7a71e32d9f1e63a",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://be7f5ea7c9bc9a347d6c06cd0e3b60b8fa9a4cfab05bf9235b86eec6a6d2bb5b",
-				"dweb:/ipfs/QmbFBZTtK17pUqYb9hPTtuxJzV3obuhhamxkRdXvrUGbj9"
+				"bzz-raw://59cc351a98d7c0e053d754ddccf833704fff2662880bda64bd91fef917dbd346",
+				"dweb:/ipfs/QmXftVMyAnQBiYjc97NQcSo3RUshtK1HE1H7zBoWc7secT"
+			]
+		},
+		"contracts/modules/Storage.sol": {
+			"keccak256": "0x1eb45efcf5f80b1a90ade51e27326684285b04b76f2ecd427902ca8af285cae4",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://b6e177a05e85b6d44c2453c9fc1d71747434f34fc3853e17be39211c27d33c6a",
+				"dweb:/ipfs/QmcHterLWZLBqnFJiuxakh6g6rt7LHy2Q9vcnjB4snPRLY"
 			]
 		}
 	},

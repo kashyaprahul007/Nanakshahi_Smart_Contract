@@ -218,11 +218,11 @@
 	},
 	"sources": {
 		"contracts/modules/SponsorMatrix.sol": {
-			"keccak256": "0xbc3d2a79964e1b5b14e28455a7e5eb327a5919ee98025a4814ec16ccf7046138",
+			"keccak256": "0x3450378217ad2f3edb737f6f6a2aaa9f4e0b155baad6c590f3f0a5deeacb15b7",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://e06ec3ab40af429fddec851fec92be930e1f80be3492b1befcb7bdd1c00d062c",
-				"dweb:/ipfs/QmT8CB6BWkMiGqPEGqVRuqrDGgFwcg7UmNFNVtZLpxjin9"
+				"bzz-raw://adf8f3b751db01968ed770c310f445fece86867f065707cf940734c36fd4456b",
+				"dweb:/ipfs/QmNmTGGuppgcZ3VwfJzoTwV9yMmi8PWWhv1mmFK7Na1eKh"
 			]
 		}
 	},

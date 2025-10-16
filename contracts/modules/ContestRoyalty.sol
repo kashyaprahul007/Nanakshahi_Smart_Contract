@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "../core/Ownable.sol";
 
-contract ContestRoyalty is Ownable {
+import "./Storage.sol";
+
+contract ContestRoyalty is Storage  {
 
     uint public constant WEEK_DURATION = 7 days;
     uint public constant MONTH_DURATION = 30 days;

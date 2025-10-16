@@ -286,6 +286,24 @@
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_userId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_poolId",
+						"type": "uint256"
+					}
+				],
+				"name": "RetopPoolByEarning",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "TIME_STEP",
 				"outputs": [
@@ -293,6 +311,30 @@
 						"internalType": "uint256",
 						"name": "",
 						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					}
+				],
+				"name": "canBuyNextPool",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "eligible",
+						"type": "bool"
+					},
+					{
+						"internalType": "string",
+						"name": "reason",
+						"type": "string"
 					}
 				],
 				"stateMutability": "view",
@@ -510,6 +552,50 @@
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_userId",
+						"type": "uint256"
+					}
+				],
+				"name": "upgradeBooster",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_userId",
+						"type": "uint256"
+					}
+				],
+				"name": "upgradePool",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint32",
+						"name": "_userId",
+						"type": "uint32"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_poolId",
+						"type": "uint256"
+					}
+				],
+				"name": "upgradePoolByEarning",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "usdt",
 				"outputs": [
@@ -536,7 +622,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"contracts/modules/Storage.sol": "Storage"
+			"contracts/modules/InfinityPool.sol": "InfinityPool"
 		},
 		"evmVersion": "prague",
 		"libraries": {},
@@ -557,6 +643,14 @@
 			"urls": [
 				"bzz-raw://e1fb6c03bf6941a63ed5dc9853f3e0d0024403c02e887ae46ee97d51ee5c2dea",
 				"dweb:/ipfs/QmVHwjNpJwPXA6i2nqMEm39jbMGGppfh7JszXs7aWNU5n3"
+			]
+		},
+		"contracts/modules/InfinityPool.sol": {
+			"keccak256": "0xde962d32937f9b5e53b32e304095c61b4bef80a68cf83b6cb9d4aba895afe38f",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://eabf5f7031b49ebcd6eeb71ecfb3ad3ee3aab715da31ae0f67f0f1f94c565afa",
+				"dweb:/ipfs/QmTVcu9Xan9tA2VjkSRBm2jt1KaDAJHXpGdcZQvddMbz9v"
 			]
 		},
 		"contracts/modules/Storage.sol": {
