@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
-import "../interfaces/IERC20.sol";
+//import "../interfaces/IERC20.sol";
 import "./Storage.sol";
 
 contract Nanakshahi is Storage{
@@ -260,13 +260,14 @@ contract Nanakshahi is Storage{
         // }
     
 
-        usdt.transfer(sponsor.account, _amount);
+        
         
         // Update income in separate mapping
         UserIncome storage sponsorIncome = userIncomes[_sponsorId];
         sponsorIncome.totalIncome += _amount;
         sponsorIncome.sponsorIncome += _amount;
-        
+        usdt.transfer(sponsor.account, _amount);
+
         // Record income
         incomeHistory[_sponsorId].push(Income({
             fromUserId: _fromId,
@@ -405,9 +406,10 @@ contract Nanakshahi is Storage{
 
         uint currentId = _startId;
         uint totalDistributed = 0;
+        uint PaidCount = 0;
         uint accumulatedShares = 1; // starts with 1x share
 
-        for (uint i = 0; i < _maxLevel; i++) 
+        for (uint i = 0; i < 30; i++) // _maxLevel
         {
               // If we run out of uplines
             if (currentId == 0 || currentId == defaultRefId) {
@@ -426,45 +428,23 @@ contract Nanakshahi is Storage{
                 _payLevelBooster(currentId, _fromId, payout, _packageLevel);
 
                 totalDistributed += payout;
+                PaidCount += accumulatedShares;
                 accumulatedShares = 1; // reset spillover
             } else {
                 // Not qualified → roll share upward
-                accumulatedShares++;
+                if(accumulatedShares<_maxLevel){
+                     accumulatedShares++;
+                }
+               
             }
+             // If we distributed all _maxLevel shares, stop
+            if (PaidCount >= _maxLevel) break;
+           
+            //if (totalDistributed >= (_amount - remainder)) break;
+           
 
             // Move to next upline
             currentId = up.uplineId;
-
-
-            //uint receiverId = baselineId;// _findEligibleSponsor(baselineId, _packageLevel);
-            //User storage u = users[baselineId];
-
-            //prev code
-            // if (currentId != 0 && currentId != defaultRefId) 
-            // {
-            //     if(users[currentId].level >= _packageLevel)
-            //     {   
-            //         for(uint j=0; j<spillover; j++)
-            //         {
-            //             _payLevelBooster(currentId, _fromId, amountPerLevel , _packageLevel); 
-                        
-            //         }
-            //         currentId = users[currentId].uplineId;
-            //         spillover = 1;
-            //     }
-            //     else 
-            //     {
-            //         currentId = users[currentId].uplineId;
-            //         spillover++;
-            //     }
-    
-            // }
-           
-           
-            // if (currentId == 0 || currentId == defaultRefId) {
-            //     _sendToCreator(amountPerLevel);
-            // } 
-       
         }
 
         // If loop finished but still some unassigned shares, send to creator

@@ -6,176 +6,183 @@ import "./Storage.sol";
 
 contract ContestRoyalty is Storage  {
 
-    uint public constant WEEK_DURATION = 7 days;
-    uint public constant MONTH_DURATION = 30 days;
-
-    uint public currentWeeklyRound = 1;
-    uint public currentMonthlyRound = 1;
-    uint public lastWeeklyReset;
-    uint public lastMonthlyReset;
-
-    address[] public qualifiedWeekly;
-    address[] public qualifiedMonthly;
-
-    struct RoundInfo {
-        uint id;
-        uint totalUsers;
-        uint totalReward;
-        uint perUserReward;
-        uint startTime;
-        uint endTime;
-        bool closed;
-    }
-
-    mapping(uint => RoundInfo) public weeklyRounds;
-    mapping(uint => RoundInfo) public monthlyRounds;
-
-    // Track qualifications
-    mapping(uint => mapping(address => bool)) public isWeeklyQualified;
-    mapping(uint => mapping(address => bool)) public isMonthlyQualified;
-
-    // Track claims
-    mapping(uint => mapping(address => bool)) public hasClaimedWeekly;
-    mapping(uint => mapping(address => bool)) public hasClaimedMonthly;
-
-    event RoundEnded(string period, uint roundId, uint users, uint perUser);
-    event UserQualified(address indexed user, string period, uint roundId);
-    event RewardClaimed(address indexed user, string period, uint roundId, uint amount);
-
+    
     constructor() {
-        lastWeeklyReset = block.timestamp;
-        lastMonthlyReset = block.timestamp;
-        weeklyRounds[currentWeeklyRound].startTime = block.timestamp;
-        monthlyRounds[currentMonthlyRound].startTime = block.timestamp;
+        currentWeeklyStartTime = block.timestamp;
+        currentMonthlyStartTime = block.timestamp;
+
+        WeeklyTotalReward = 0;
+        currentWeeklyRound = 1;
+        monthlyTotalReward = 0;
+        currentMonthlyRound = 1;     
     }
 
-    // --- Qualification ---
-    function qualifyWeekly() external payable {
-        _checkWeeklyRound();
-        require(!isWeeklyQualified[currentWeeklyRound][msg.sender], "Already qualified");
-        qualifiedWeekly.push(msg.sender);
-        isWeeklyQualified[currentWeeklyRound][msg.sender] = true;
-        emit UserQualified(msg.sender, "Weekly", currentWeeklyRound);
+     function _closeMonthlyContest() internal {
+        
+        if (block.timestamp >= (currentMonthlyStartTime + MONTH_DURATION)) {
+            uint currentRound = currentMonthlyRound;
+            monthlyRoyalty storage curentMonthRoyalty = monthlyRoyaltydtl[currentRound];
+
+            // Prevent double closing
+            // if (curentMonthRoyalty.endTime > 0 && block.timestamp < curentMonthRoyalty.endTime) {
+            //     return;
+            // }
+            if (curentMonthRoyalty.closed) return;
+            uint qualifiedCount = monthlyQualifiedUsers.length;
+            uint perUserReward;
+            uint distributedAmount;
+            uint leftover;
+
+            if (qualifiedCount > 0) {
+                // Calculate reward distribution
+                uint rawReward = monthlyTotalReward / qualifiedCount;
+                perUserReward = (rawReward > monthlyCapping) ? monthlyCapping : rawReward;
+                distributedAmount = perUserReward * qualifiedCount;
+                leftover = (monthlyTotalReward > distributedAmount) ? monthlyTotalReward - distributedAmount : 0;
+            } else {
+                // No qualified users → carry forward all
+                leftover = monthlyTotalReward;
+                distributedAmount = 0;
+                perUserReward = 0;
+            }
+
+            // Store round data
+            curentMonthRoyalty.roundId = currentRound;
+            curentMonthRoyalty.perUserReward = perUserReward;
+            curentMonthRoyalty.totalUsers = qualifiedCount;
+            curentMonthRoyalty.totalReward = monthlyTotalReward;//distributedAmount;
+            curentMonthRoyalty.carryForward = leftover;
+            curentMonthRoyalty.endTime = currentMonthlyStartTime + MONTH_DURATION;
+            curentMonthRoyalty.closed = true;
+
+            // Prepare next round
+            currentMonthlyStartTime = curentMonthRoyalty.endTime;
+            currentMonthlyRound = currentRound + 1;
+            monthlyTotalReward = leftover; // carry forward
+
+            emit MonthlyClosed(currentRound, qualifiedCount, perUserReward,  distributedAmount+leftover, distributedAmount, leftover, curentMonthRoyalty.endTime);
+        }
+    } 
+
+    function canClaimMonthlyReward(uint _userId, uint _roundId) external view returns (bool) {
+    monthlyRoyaltyUser storage userRoyalty = monthlyRoyaltyUserdtl[_userId];
+    monthlyRoyalty storage royalty = monthlyRoyaltydtl[_roundId];
+
+    if (
+        !royalty.closed ||
+        _roundId >= currentMonthlyRound ||
+        !userRoyalty.isQualified ||
+        userRoyalty.qualifiedRoundId > _roundId ||
+        userRoyalty.isClaimed[_roundId] ||
+        royalty.perUserReward == 0
+    ) {
+        return false;
     }
+    return true;
+}
 
-    function qualifyMonthly() external payable {
-        _checkMonthlyRound();
-        require(!isMonthlyQualified[currentMonthlyRound][msg.sender], "Already qualified");
-        qualifiedMonthly.push(msg.sender);
-        isMonthlyQualified[currentMonthlyRound][msg.sender] = true;
-        emit UserQualified(msg.sender, "Monthly", currentMonthlyRound);
-    }
+    function claimMonthlyContestReward(uint _userId, uint _roundId) external nonReentrant {
+        
+        User storage user = users[_userId];
+        address userAddress = user.account ;
+        require(userAddress == msg.sender, "Not your account");
+        require(_userId > 0 && _roundId > 0 && monthlyRoyaltydtl[_roundId].closed == true && _roundId < currentMonthlyRound, "Invalid userId or roundId or round or not closed");
+        monthlyRoyaltyUser storage userRoyalty  = monthlyRoyaltyUserdtl[_userId];
+        monthlyRoyalty storage currentMonthRoyalty = monthlyRoyaltydtl[_roundId];
 
-    // --- Claim reward ---
-    function claimWeeklyReward(uint roundId) external {
-        RoundInfo memory r = weeklyRounds[roundId];
-        require(r.closed, "Round not closed yet");
-        require(isWeeklyQualified[roundId][msg.sender], "Not qualified");
-        require(!hasClaimedWeekly[roundId][msg.sender], "Already claimed");
-        require(r.perUserReward > 0, "No reward");
+        require(userRoyalty.isQualified == true, "Not qualified ");
+        require(!userRoyalty.isClaimed[_roundId], "Already claimed for this round");
+        require(currentMonthRoyalty.perUserReward > 0, "No reward to claim");
+        require(currentMonthRoyalty.claimedCount < currentMonthRoyalty.totalUsers, "All users claimed");
+        require(userRoyalty.qualifiedRoundId <= _roundId, "Not eligible to claim");
+        uint amount = currentMonthRoyalty.perUserReward;
+  
+        currentMonthRoyalty.claimedCount += 1;
+        userRoyalty.isClaimed[_roundId] = true;
+        
+        _distributeIncome(_userId, _userId, amount, 0, 13);       
+       
+        emit MonthlyRewardClaim(_roundId, _userId, amount,  block.timestamp);
+    } 
 
-        hasClaimedWeekly[roundId][msg.sender] = true;
-       // payable(msg.sender).transfer(r.perUserReward);// here fund transfer code will come
+    function _closeWeeklyContest() internal {
+        
+        if (block.timestamp >= (currentWeeklyStartTime + WEEK_DURATION)) {
+            uint currentRound = currentWeeklyRound;
+            WeeklyContest storage curentWeekContest = weeklyContestdtl[currentRound];
 
-        emit RewardClaimed(msg.sender, "Weekly", roundId, r.perUserReward);
-    }
+            // Prevent double closing
+            // if (curentWeekContest.endTime > 0 && block.timestamp < curentWeekContest.endTime) {
+            //     return;
+            // }
+            if (curentWeekContest.closed) return;
 
-    function claimMonthlyReward(uint roundId) external {
-        RoundInfo memory r = monthlyRounds[roundId];
-        require(r.closed, "Round not closed yet");
-        require(isMonthlyQualified[roundId][msg.sender], "Not qualified");
-        require(!hasClaimedMonthly[roundId][msg.sender], "Already claimed");
-        require(r.perUserReward > 0, "No reward");
+            uint qualifiedCount = weeklyQualifiedUsers[currentRound].length;
+            uint perUserReward;
+            uint distributedAmount;
+            uint leftover;
 
-        hasClaimedMonthly[roundId][msg.sender] = true;
-       // payable(msg.sender).transfer(r.perUserReward); // here fund transfer code will come
+            if (qualifiedCount > 0) {
+                // Calculate reward distribution
+                uint rawReward = WeeklyTotalReward / qualifiedCount;
+                perUserReward = (rawReward > WeeklyCapping) ? WeeklyCapping : rawReward;
+                distributedAmount = perUserReward * qualifiedCount;
+                leftover = (WeeklyTotalReward > distributedAmount) ? WeeklyTotalReward - distributedAmount : 0;
+            } else {
+                // No qualified users → carry forward all
+                leftover = WeeklyTotalReward;
+                distributedAmount = 0;
+                perUserReward = 0;
+            }
 
-        emit RewardClaimed(msg.sender, "Monthly", roundId, r.perUserReward);
-    }
+            // Store round data
+            curentWeekContest.roundId = currentRound;
+            curentWeekContest.perUserReward = perUserReward;
+            curentWeekContest.totalUsers = qualifiedCount;
+            curentWeekContest.totalReward = WeeklyTotalReward;//distributedAmount;
+            curentWeekContest.carryForward = leftover;
+            curentWeekContest.endTime = currentWeeklyStartTime + WEEK_DURATION;
+            curentWeekContest.closed = true;
+
+            // Prepare next round
+            currentWeeklyStartTime = curentWeekContest.endTime;
+            currentWeeklyRound = currentRound + 1;
+            WeeklyTotalReward = leftover; // carry forward
+
+             emit WeeklyClosed(currentRound, qualifiedCount, perUserReward,  distributedAmount+leftover, distributedAmount, leftover, curentWeekContest.endTime);
+        }
+    }   
+
+    function claimWeeklyContestReward(uint _userId, uint _roundId) external nonReentrant {
+        
+        User storage user = users[_userId];
+        address userAddress = user.account ;
+        require(userAddress == msg.sender, "Not your account");
+        require(_userId > 0 && _roundId > 0 && weeklyContestdtl[_roundId].closed == true && _roundId < currentWeeklyRound, "Invalid userId or roundId or round or not closed");
+        weeklyUser storage weeklyuserdtl = weeklyUserdtl[_roundId][_userId];
+        WeeklyContest storage curentWeekContest = weeklyContestdtl[_roundId];
+        require(weeklyuserdtl.isQualified == true && weeklyuserdtl.isClaimed == false, "Not qualified or already claimed");
+        require(curentWeekContest.perUserReward > 0, "No reward to claim");
+        require(curentWeekContest.claimedCount < curentWeekContest.totalUsers, "All users claimed");
+
+        uint amount = curentWeekContest.perUserReward;
+  
+        curentWeekContest.claimedCount += 1;
+        weeklyuserdtl.isClaimed = true;
+        
+        _distributeIncome(_userId, _userId, amount, 0, 12);       
+       
+        emit WeeklyRewardClaim(_roundId, _userId, amount,  block.timestamp);
+    }   
+
+    
+
+
+
+
 
     // --- View helper (for frontend) ---
-    function getUserRoundStatus(address user, uint roundId, bool isWeekly)
-        external
-        view
-        returns (
-            bool qualified,
-            bool claimed,
-            uint rewardAmount,
-            bool roundClosed
-        )
-    {
-        if (isWeekly) {
-            RoundInfo memory r = weeklyRounds[roundId];
-            qualified = isWeeklyQualified[roundId][user];
-            claimed = hasClaimedWeekly[roundId][user];
-            rewardAmount = r.perUserReward;
-            roundClosed = r.closed;
-        } else {
-            RoundInfo memory r = monthlyRounds[roundId];
-            qualified = isMonthlyQualified[roundId][user];
-            claimed = hasClaimedMonthly[roundId][user];
-            rewardAmount = r.perUserReward;
-            roundClosed = r.closed;
-        }
-    }
-
-    // --- Internal checkers ---
-    function _checkWeeklyRound() internal {
-        if (block.timestamp >= lastWeeklyReset + WEEK_DURATION) {
-            _endWeeklyRound();
-        }
-    }
-
-    function _checkMonthlyRound() internal {
-        if (block.timestamp >= lastMonthlyReset + MONTH_DURATION) {
-            _endMonthlyRound();
-        }
-    }
-
-    // --- Round enders ---
-    function _endWeeklyRound() internal {
-        uint users = qualifiedWeekly.length;
-        uint total = address(this).balance / 2;
-        uint perUser = users > 0 ? total / users : 0;
-
-        weeklyRounds[currentWeeklyRound] = RoundInfo({
-            id: currentWeeklyRound,
-            totalUsers: users,
-            totalReward: total,
-            perUserReward: perUser,
-            startTime: lastWeeklyReset,
-            endTime: block.timestamp,
-            closed: true
-        });
-
-        emit RoundEnded("Weekly", currentWeeklyRound, users, perUser);
-
-        currentWeeklyRound++;
-        lastWeeklyReset = block.timestamp;
-        delete qualifiedWeekly;
-    }
-
-    function _endMonthlyRound() internal {
-        uint users = qualifiedMonthly.length;
-        uint total = address(this).balance / 2;
-        uint perUser = users > 0 ? total / users : 0;
-
-        monthlyRounds[currentMonthlyRound] = RoundInfo({
-            id: currentMonthlyRound,
-            totalUsers: users,
-            totalReward: total,
-            perUserReward: perUser,
-            startTime: lastMonthlyReset,
-            endTime: block.timestamp,
-            closed: true
-        });
-
-        emit RoundEnded("Monthly", currentMonthlyRound, users, perUser);
-
-        currentMonthlyRound++;
-        lastMonthlyReset = block.timestamp;
-        delete qualifiedMonthly;
-    }
+    
 
     // Deposit funds
    // receive() external payable {}

@@ -320,9 +320,26 @@
                 id: userMainId,               
                 poolId: poolId,
                 parentId: parentId,
-                bonusCount: 0
+                bonusCount: 0,
+                joinTime: block.timestamp
             });
         userBoosterChildren[poolId][parentId].push(userMainId);
+
+       
+        if(poolId == 1  ){
+            User memory userdtl = users[userMainId];
+            weeklyUserDirects[currentWeeklyRound][userdtl.sponsorId].push(userMainId);
+            uint directsCount = weeklyUserDirects[currentWeeklyRound][userdtl.sponsorId].length;
+
+            if(userdtl.registrationTime + TIME_STEP >= block.timestamp){
+                _tryWeeklyContestQualify(userMainId, currentWeeklyRound);
+            }
+            if( directsCount >= 5){
+                 _tryWeeklyContestQualify(userdtl.sponsorId, currentWeeklyRound);
+            }
+            
+        }
+
 
         if (parentId == 0 || parentId == defaultRefId) {
             _sendToCreator(packagePrice);
@@ -341,36 +358,6 @@
        
            // _distributePoolIncome( parentId, poolId, userMainId, packagePrice);
     }
-    // function _distributeBoosterlIncome( uint _parentId, uint _poolId, uint _userMainId, uint _amount) private {
-    //     if (_parentId == 0 || _parentId == defaultRefId) {
-    //         _sendToCreator(_amount);
-    //         return;
-    //     }        
-    //     uint _amountPerLevel = _amount / 3;  
-
-    //     for(uint i=0; i<3; i++){
-           
-    //         UserPool storage userp = userPooldtl[_poolId][_parentId];
-    //         uint parentMainId = userp.mainid; //parent main id
-    //         if(userp.bonusCount<39)
-    //         {
-    //             if(userp.bonusCount<24){
-    //                userp.bonusCount +=1;   
-    //                _payPoolIncome(parentMainId, _userMainId, _amountPerLevel, 1, 10);
-    //             }
-    //             if(userp.bonusCount>=24 && userp.bonusCount<36){
-    //                 userp.bonusCount +=1;
-    //                 userPooltopup[_poolId][parentMainId].nextPoolAmt += _amountPerLevel;
-    //                // userp.nextPoolAmt += _amountPerLevel;
-    //             }
-    //             if(userp.bonusCount>=36 ){
-    //                 userp.bonusCount +=1;
-    //                  userPooltopup[_poolId][parentMainId].reTopupAmt += _amountPerLevel;
-    //                // userp.reTopupAmt += _amountPerLevel;
-    //             }
-    //         }
-    //     }     
-  
-    // }
+    
    
 }
