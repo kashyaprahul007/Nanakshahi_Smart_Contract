@@ -88,7 +88,7 @@ contract Storage is ReentrancyGuard {
         uint sponsorIncome;
         uint matrixIncome;
         uint levelBoosterIncome;
-        uint levelIncome;
+        //uint levelIncome;
         uint royaltyIncome;
         uint royaltyIncomeClaimed; // Track claimed royalty for capping
         uint communityIncome;        // <-- NEW: total community bonus claimed
@@ -106,6 +106,18 @@ contract Storage is ReentrancyGuard {
         uint timestamp;
         uint incomeType; // 1: Sponsor, 2: Matrix, 3: Level, 4: Level Booster, 5: Creator, 6: Royalty , 7 Lottery  , 8 Roi Income, 10 Infintiy Pool, 11 Booster Income,12 weekly contest
     }
+    enum IncomeType {
+        Creator,            // 0
+        Sponsor,            // 1
+        Matrix,             // 2
+        LevelBooster,       // 3        
+        Community,          // 4
+        Pool,               // 5
+        Booster,            // 6
+        WeeklyContest,      // 7
+        MonthlyRoyalty,     // 8
+        MonthlyTopRoyalty   // 9
+    }
 
 
 
@@ -120,13 +132,14 @@ contract Storage is ReentrancyGuard {
     event UserJoined(uint8 indexed matrixId, uint32 indexed userId, address indexed user, uint32 parentId, address parentAddr, uint8 position);
     event RewardSent(address indexed to, uint256 amount, string level);
 
+
      // Events
     event Registration(address indexed user, address indexed sponsor, uint indexed userId, uint uplineId);
     event Upgrade(address indexed user, uint indexed userId, uint packageLevel, string depositType);
     event IncomeDistributed(address indexed to, address indexed from, uint amount, uint packageLevel, uint incomeType);
     event LotteryReward(address indexed winner, uint indexed fromUserId, uint amount, uint timestamp);
     event CommunityBonusDistributed(uint amount, uint usersCount, uint perUser);
-
+    event IncomeDistribution(address indexed to,address indexed from,uint256 amount,uint256 packageLevel,IncomeType incomeType,uint256 timestamp);
   
     // Infinity Pool and booster bonus 
 
@@ -274,17 +287,18 @@ contract Storage is ReentrancyGuard {
     UserIncome storage creatorIncome = userIncomes[defaultRefId];
     creatorIncome.totalIncome += _amount;
 
-    incomeHistory[defaultRefId].push(Income({
-        fromUserId: 0,
-        amount: _amount,
-        packageLevel: 0,
-        timestamp: block.timestamp,
-        incomeType: 5
-    }));
+    // incomeHistory[defaultRefId].push(Income({
+    //     fromUserId: 0,
+    //     amount: _amount,
+    //     packageLevel: 0,
+    //     timestamp: block.timestamp,
+    //     incomeType: 5
+    // }));
+    emit IncomeDistribution(creatorWallet, creatorWallet, _amount, 0, IncomeType.Creator, block.timestamp );
 }
 
 
-function _distributeIncome(uint _userId,uint _fromUserId,uint _amount, uint _packageLevel, uint _incomeType) internal {
+function _distributeIncome(uint _userId,uint _fromUserId,uint _amount, uint _packageLevel, IncomeType _incomeType) internal {
     User storage user = users[_userId];
     address userAddress = user.account;
     require(userAddress != address(0), "Invalid user");
@@ -298,37 +312,36 @@ function _distributeIncome(uint _userId,uint _fromUserId,uint _amount, uint _pac
     UserIncome storage income = userIncomes[_userId];
     income.totalIncome += _amount;
         // --- Update specific income field based on type ---
-    if      (_incomeType == 1) income.sponsorIncome += _amount;
-    else if (_incomeType == 2) income.matrixIncome += _amount;
-    else if (_incomeType == 3) income.levelBoosterIncome += _amount;
-    else if (_incomeType == 4) income.levelIncome += _amount;
-   // else if (_incomeType == 5) income.royaltyIncome += _amount;
-    //else if (_incomeType == 6) income.royaltyIncomeClaimed += _amount;
-    else if (_incomeType == 8) income.communityIncome += _amount;
-   
-    else if (_incomeType == 10) income.poolIncome += _amount;
-    else if (_incomeType == 11) income.boosterIncome += _amount;
-    else if (_incomeType == 12) income.weeklyContestIncome += _amount;
-    else if (_incomeType == 13) income.monthlyRoyalty += _amount;
-    else if (_incomeType == 14) income.monthlyTopRoyalty += _amount;
+    if      (_incomeType == IncomeType.Sponsor) income.sponsorIncome += _amount;
+    else if (_incomeType == IncomeType.Matrix) income.matrixIncome += _amount;
+    else if (_incomeType == IncomeType.LevelBooster) income.levelBoosterIncome += _amount;  
+    else if (_incomeType == IncomeType.Community) income.communityIncome += _amount;   
+    else if (_incomeType == IncomeType.Pool) income.poolIncome += _amount;
+    else if (_incomeType == IncomeType.Booster) income.boosterIncome += _amount;
+    else if (_incomeType == IncomeType.WeeklyContest) income.weeklyContestIncome += _amount;
+    else if (_incomeType == IncomeType.MonthlyRoyalty) income.monthlyRoyalty += _amount;
+    else if (_incomeType == IncomeType.MonthlyTopRoyalty) income.monthlyTopRoyalty += _amount;
+
+    
+
     else revert("Unknown income type");
    
         // --- Update total income ---
     
 
     // Record income in user history
-    incomeHistory[_userId].push(Income({
-        fromUserId: _fromUserId,
-        amount: _amount,
-        packageLevel: _packageLevel,
-        timestamp: block.timestamp,
-        incomeType: _incomeType
-    }));
+    // incomeHistory[_userId].push(Income({
+    //     fromUserId: _fromUserId,
+    //     amount: _amount,
+    //     packageLevel: _packageLevel,
+    //     timestamp: block.timestamp,
+    //     incomeType: _incomeType
+    // }));
     //usdt.transfer(userAddress, _amount);
   
     usdt.safeTransfer(userAddress, _amount);
-
-    emit IncomeDistributed(userAddress, users[_fromUserId].account, _amount, _packageLevel, _incomeType);
+     emit IncomeDistribution(userAddress, users[_fromUserId].account, _amount,_packageLevel, _incomeType, block.timestamp );
+    //emit IncomeDistributed(userAddress, users[_fromUserId].account, _amount, _packageLevel, _incomeType);
 }
 
 function _tryWeeklyContestQualify(uint _userId, uint _roundId)internal {

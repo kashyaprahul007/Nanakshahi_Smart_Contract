@@ -89,6 +89,49 @@
 					{
 						"indexed": true,
 						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "from",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "packageLevel",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "enum Storage.IncomeType",
+						"name": "incomeType",
+						"type": "uint8"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "IncomeDistribution",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
 						"name": "winner",
 						"type": "address"
 					},
@@ -1026,19 +1069,19 @@
 			]
 		},
 		"contracts/modules/ContestRoyalty.sol": {
-			"keccak256": "0x29685bd05e1e45bdcc66778c4127b4994ec959e699356a941277af4c2164498a",
+			"keccak256": "0xbd9b94d7149b9b253e1df15bda8e84256bb7353e32432684d760d1cb27fd35ef",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://9e1e89521b82a4eb253f159d99e54d18b60cd39e6e1cf242e5c3908772cdca3e",
-				"dweb:/ipfs/QmXcfCPxtSHDr2GF8wkjHKLXJeoES84vCmHQWdUcTvLEmn"
+				"bzz-raw://e22ce4a7eb339d8019dff4e733acc0b36c3aa2c553faccbb49a7490308940368",
+				"dweb:/ipfs/QmYaHgSEvYUgEffoNBsMwf6SnBEpZbFMBqtp6fFNVRHogh"
 			]
 		},
 		"contracts/modules/Storage.sol": {
-			"keccak256": "0xb6871c4ddfa82bc9db193e85fc7e8e9b192c6e1a5b331eda0714821b69bdbf4b",
+			"keccak256": "0xf89bc937b1d0421daf41b76528fcb8d2d446dc2f6c1b73f23c6fb0f0227cfcb1",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://348364d62e6b5e6424468248bc16433d382e4061629868930be76da53ac75eef",
-				"dweb:/ipfs/QmPDZYjFkQgfzivfmdGxEMr5SEVK4G2s2aGgYPurzWqEEk"
+				"bzz-raw://0750036d2cb8ca9df6aec1cf6a98c2ddbd67c5957a72355dd6a9e0d15072b4a2",
+				"dweb:/ipfs/QmWEMJNJ1MEYwHfoRBbakoekAqBjmtVpzfnWwzaXDxoeGb"
 			]
 		}
 	},

@@ -100,7 +100,7 @@ contract ContestRoyalty is Storage  {
         currentMonthRoyalty.claimedCount += 1;
         userRoyalty.isClaimed[_roundId] = true;
         
-        _distributeIncome(_userId, _userId, amount, 0, 13);       
+        _distributeIncome(_userId, _userId, amount, 0, IncomeType.MonthlyRoyalty);       
        
         emit MonthlyRewardClaim(_roundId, _userId, amount,  block.timestamp);
     } 
@@ -170,7 +170,7 @@ contract ContestRoyalty is Storage  {
         curentWeekContest.claimedCount += 1;
         weeklyuserdtl.isClaimed = true;
         
-        _distributeIncome(_userId, _userId, amount, 0, 12);       
+        _distributeIncome(_userId, _userId, amount, 0, IncomeType.WeeklyContest);       
        
         emit WeeklyRewardClaim(_roundId, _userId, amount,  block.timestamp);
     }   

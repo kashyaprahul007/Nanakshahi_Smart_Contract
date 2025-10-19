@@ -78,6 +78,49 @@
 					{
 						"indexed": true,
 						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "from",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "packageLevel",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "enum Storage.IncomeType",
+						"name": "incomeType",
+						"type": "uint8"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "IncomeDistribution",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
 						"name": "winner",
 						"type": "address"
 					},
@@ -948,11 +991,11 @@
 			]
 		},
 		"contracts/modules/Storage.sol": {
-			"keccak256": "0xb6871c4ddfa82bc9db193e85fc7e8e9b192c6e1a5b331eda0714821b69bdbf4b",
+			"keccak256": "0x0d7ff2640958a884f239b713548dc5eb5bfbbbf9304b7561258701c8b3508a1d",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://348364d62e6b5e6424468248bc16433d382e4061629868930be76da53ac75eef",
-				"dweb:/ipfs/QmPDZYjFkQgfzivfmdGxEMr5SEVK4G2s2aGgYPurzWqEEk"
+				"bzz-raw://8ca5f637a6c2243b01745b8da1476bf14b3cf69b6679c3751768ad587d265f14",
+				"dweb:/ipfs/QmX4gCUgVvu7gFJU7mqeS65uguwnJ7a16Pph7UTLqRMEYo"
 			]
 		}
 	},
