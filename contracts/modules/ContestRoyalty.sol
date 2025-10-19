@@ -10,14 +10,111 @@ contract ContestRoyalty is Storage  {
     constructor() {
         currentWeeklyStartTime = block.timestamp;
         currentMonthlyStartTime = block.timestamp;
+        topRoyaltyStartTime = block.timestamp;
 
         WeeklyTotalReward = 0;
         currentWeeklyRound = 1;
+
         monthlyTotalReward = 0;
-        currentMonthlyRound = 1;     
+        currentMonthlyRound = 1;    
+
+        topRoyaltyReward = 0;
+        topRoyaltyRound = 1;
     }
 
-     function _closeMonthlyContest() internal {
+    function _closeTopRoyalty() internal {
+        
+        if (block.timestamp < topRoyaltyStartTime + MONTH_DURATION) return;
+        uint currentRound = topRoyaltyRound;
+        topRoyalty storage curentTopRoyalty = topRoyaltydtl[currentRound];
+
+        // Prevent double closing
+        // if (curentMonthRoyalty.endTime > 0 && block.timestamp < curentMonthRoyalty.endTime) {
+        //     return;
+        // }
+        if (curentTopRoyalty.closed) return;
+        uint qualifiedCount = topRoyaltyQualifiedUsers.length;
+        uint perUserReward;
+        uint distributedAmount;
+        uint leftover;
+
+        if (qualifiedCount > 0) {
+            // Calculate reward distribution              
+            
+            perUserReward = topRoyaltyReward / qualifiedCount;
+            distributedAmount = perUserReward * qualifiedCount;
+            leftover = topRoyaltyReward - distributedAmount;
+        } else {
+            // No qualified users → carry forward all
+            leftover = topRoyaltyReward;
+            distributedAmount = 0;
+            perUserReward = 0;
+        }
+
+        // Store round data
+        curentTopRoyalty.roundId = currentRound;
+        curentTopRoyalty.perUserReward = perUserReward;
+        curentTopRoyalty.totalUsers = qualifiedCount;
+        curentTopRoyalty.totalReward = topRoyaltyReward;//distributedAmount;
+        curentTopRoyalty.carryForward = leftover;
+        curentTopRoyalty.endTime = topRoyaltyStartTime + MONTH_DURATION;
+        curentTopRoyalty.closed = true;
+
+        // Prepare next round
+        topRoyaltyStartTime = curentTopRoyalty.endTime;
+        topRoyaltyRound = currentRound + 1;
+        topRoyaltyReward = leftover; // carry forward
+
+        emit TopRoyaltyClosed(currentRound, qualifiedCount, perUserReward,  distributedAmount+leftover, distributedAmount, leftover, curentTopRoyalty.endTime);
+        
+    }
+
+
+    function claimTopRoyaltyReward(uint _userId, uint _roundId) external nonReentrant {
+        
+        User storage user = users[_userId];
+        address userAddress = user.account ;
+        require(userAddress == msg.sender, "Not your account");
+        require(userAddress != address(0), "Invalid account");
+
+        require(_userId > 0 && _roundId > 0 && topRoyaltydtl[_roundId].closed == true && _roundId < topRoyaltyRound, "Invalid userId or roundId or round or not closed");
+        topRoyaltyUser storage userRoyalty  = topRoyaltyUserdtl[_userId];
+        topRoyalty storage currentTopRoyalty = topRoyaltydtl[_roundId];
+
+        require(userRoyalty.isQualified == true, "Not qualified ");
+        require(!userRoyalty.isClaimed[_roundId], "Already claimed for this round");
+        require(currentTopRoyalty.perUserReward > 0, "No reward to claim");
+        require(currentTopRoyalty.claimedCount < currentTopRoyalty.totalUsers, "All users claimed");
+        require(userRoyalty.qualifiedRoundId <= _roundId, "Not eligible to claim");
+        uint amount = currentTopRoyalty.perUserReward;
+  
+        currentTopRoyalty.claimedCount += 1;
+        userRoyalty.isClaimed[_roundId] = true;
+        
+        _distributeIncome(_userId, _userId, amount, 0, IncomeType.TopRoyalty);       
+       
+        emit TopRoyaltyRewardClaim(_roundId, _userId, amount,  block.timestamp);
+    } 
+
+    function canClaimMonthlyReward(uint _userId, uint _roundId) external view returns (bool) {
+        monthlyRoyaltyUser storage userRoyalty = monthlyRoyaltyUserdtl[_userId];
+        monthlyRoyalty storage royalty = monthlyRoyaltydtl[_roundId];
+
+        if (
+            !royalty.closed ||
+            _roundId >= currentMonthlyRound ||
+            !userRoyalty.isQualified ||
+            userRoyalty.qualifiedRoundId > _roundId ||
+            userRoyalty.isClaimed[_roundId] ||
+            royalty.perUserReward == 0
+        ) {
+            return false;
+        }
+        return true;
+    }
+
+    
+    function _closeMonthlyRoyalty() internal {
         
         if (block.timestamp >= (currentMonthlyStartTime + MONTH_DURATION)) {
             uint currentRound = currentMonthlyRound;
@@ -64,24 +161,7 @@ contract ContestRoyalty is Storage  {
         }
     } 
 
-    function canClaimMonthlyReward(uint _userId, uint _roundId) external view returns (bool) {
-    monthlyRoyaltyUser storage userRoyalty = monthlyRoyaltyUserdtl[_userId];
-    monthlyRoyalty storage royalty = monthlyRoyaltydtl[_roundId];
-
-    if (
-        !royalty.closed ||
-        _roundId >= currentMonthlyRound ||
-        !userRoyalty.isQualified ||
-        userRoyalty.qualifiedRoundId > _roundId ||
-        userRoyalty.isClaimed[_roundId] ||
-        royalty.perUserReward == 0
-    ) {
-        return false;
-    }
-    return true;
-}
-
-    function claimMonthlyContestReward(uint _userId, uint _roundId) external nonReentrant {
+    function claimMonthlyCRoyaltyReward(uint _userId, uint _roundId) external nonReentrant {
         
         User storage user = users[_userId];
         address userAddress = user.account ;

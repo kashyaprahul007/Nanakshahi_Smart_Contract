@@ -20,8 +20,15 @@ contract Storage is ReentrancyGuard {
 
     uint256 public constant PERCENTS_DIVIDER = 10000;
     uint256 public constant TIME_STEP = 1 days;
+    uint256 public constant MONTHLY_ROYALTY_TIME = 100 days;
+    uint256 public constant TOP_ROYALTY_TIME = 450 days;
     uint256 public constant ROI_CAP_MULTIPLIER = 15; // 1.5x
     uint256 public constant ROI_CAP_DIVIDER = 10;
+    uint256 public constant MONTHLY_ROYALTY_LEVEL = 10;
+    uint256 public constant TOP_ROYALTY_LEVEL = 15;
+    uint256 public constant MONTHLY_ROYALTY_DIRECT = 5;
+    uint256 public constant TOP_ROYALTY_DIRECT = 2;
+
 
 
  
@@ -80,7 +87,10 @@ contract Storage is ReentrancyGuard {
         uint boosterlevel;
         uint boosterDeposit;
         uint registrationTime;
-
+        uint level10Time;
+        uint level15Time;
+        uint monthlyUserDirectCount; // at 10 th level in 100 days
+        uint topRoyaltyDirectCount; // // at 15 th level in 450 days
     }
      // struct for bonus calc
     struct UserIncome {
@@ -96,7 +106,7 @@ contract Storage is ReentrancyGuard {
         uint boosterIncome;        // <-- booster Income
         uint weeklyContestIncome;        // <-- weekly contest Income
         uint monthlyRoyalty;        // <-- weekly contest Income
-        uint monthlyTopRoyalty;        // <-- weekly contest Income
+        uint topRoyalty;        // <-- weekly contest Income
     }
 
     struct Income {
@@ -116,7 +126,7 @@ contract Storage is ReentrancyGuard {
         Booster,            // 6
         WeeklyContest,      // 7
         MonthlyRoyalty,     // 8
-        MonthlyTopRoyalty   // 9
+        TopRoyalty   // 9
     }
 
 
@@ -135,7 +145,7 @@ contract Storage is ReentrancyGuard {
 
      // Events
     event Registration(address indexed user, address indexed sponsor, uint indexed userId, uint uplineId);
-    event Upgrade(address indexed user, uint indexed userId, uint packageLevel, string depositType);
+    event Upgrade(address indexed user, uint indexed userId, uint packageLevel, string depositType, uint upgradeTime);
     event IncomeDistributed(address indexed to, address indexed from, uint amount, uint packageLevel, uint incomeType);
     event LotteryReward(address indexed winner, uint indexed fromUserId, uint amount, uint timestamp);
     event CommunityBonusDistributed(uint amount, uint usersCount, uint perUser);
@@ -214,7 +224,7 @@ contract Storage is ReentrancyGuard {
     }
    
     struct weeklyUser{
-        uint id;
+      
         uint joinTime;
         uint roundId ;
         uint claimTime;
@@ -253,21 +263,59 @@ contract Storage is ReentrancyGuard {
     }
 
     struct monthlyRoyaltyUser{
-        uint id;
+      
         uint joinTime;
         uint qualifiedRoundId ;
         uint claimTime;
         mapping(uint => bool) isClaimed; 
         bool isQualified;
     }
-    mapping (uint => monthlyRoyalty) internal monthlyRoyaltydtl;// details of weekly contest
-    uint[] monthlyQualifiedUsers; // qualifieduserweekly
+    mapping (uint => monthlyRoyalty) internal monthlyRoyaltydtl;// details of monthly royalty
+    uint[] monthlyQualifiedUsers; // qualified user monthly royalty
     mapping(uint => monthlyRoyaltyUser) internal monthlyRoyaltyUserdtl;
-    mapping(uint => uint[]) internal monthlyUserDirects;//details users direct in monthly Royalty
+    mapping(uint => uint[]) internal monthlyUserDirects;//details users direct in monthly Royalty at 10th level
 
     event MonthlyClosed(uint roundId, uint totalUsers, uint perUserReward, uint totalReward, uint totalDistributed, uint leftoverReward, uint endTime);
     event MonthlyRewardClaim(uint roundId, uint userId, uint perUserReward,  uint claimTime);
-    event MonthlyContestQualified(uint roundId, uint userId, uint joinTime);
+    event MonthlyRoyaltyQualified(uint roundId, uint userId, uint joinTime);
+
+      //, Top royalty
+  
+    uint public topRoyaltyRound = 1;
+    uint public topRoyaltyStartTime = 0;
+    uint public topRoyaltyReward = 0;
+
+    struct topRoyalty {
+        uint roundId;    
+        uint totalReward;
+        uint totalUsers;
+        uint perUserReward;
+        uint claimedCount;
+        uint startTime;
+        uint endTime;
+        uint carryForward;
+        bool closed;
+    }
+
+    struct topRoyaltyUser{
+      
+        uint joinTime;
+        uint qualifiedRoundId ;
+        uint claimTime;
+        mapping(uint => bool) isClaimed; 
+        bool isQualified;
+    }
+    mapping (uint => topRoyalty) internal topRoyaltydtl;// details of top royalty contest
+    uint[] topRoyaltyQualifiedUsers; // qualified user top royalty
+    mapping(uint => topRoyaltyUser) internal topRoyaltyUserdtl;
+    mapping(uint => uint[]) internal topRoyaltyUserDirects;//details users direct in top Royalty at 15th level
+
+    event TopRoyaltyClosed(uint roundId, uint totalUsers, uint perUserReward, uint totalReward, uint totalDistributed, uint leftoverReward, uint endTime);
+    event TopRoyaltyRewardClaim(uint roundId, uint userId, uint perUserReward,  uint claimTime);
+    event TopRoyaltyQualified(uint roundId, uint userId, uint joinTime);
+
+
+
    
     constructor() {
        
@@ -298,65 +346,66 @@ contract Storage is ReentrancyGuard {
 }
 
 
-function _distributeIncome(uint _userId,uint _fromUserId,uint _amount, uint _packageLevel, IncomeType _incomeType) internal {
-    User storage user = users[_userId];
-    address userAddress = user.account;
-    require(userAddress != address(0), "Invalid user");
-    require(_amount > 0, "Zero amount");
+    function _distributeIncome(uint _userId,uint _fromUserId,uint _amount, uint _packageLevel, IncomeType _incomeType) internal {
+        User storage user = users[_userId];
+        address userAddress = user.account;
+        require(userAddress != address(0), "Invalid user");
+        require(_amount > 0, "Zero amount");
 
 
-    // Transfer tokens
-    //usdt.safeTransfer(userAddress, _amount);
-   //( userAddress, _amount);
+        // Transfer tokens
+        //usdt.safeTransfer(userAddress, _amount);
+    //( userAddress, _amount);
 
-    UserIncome storage income = userIncomes[_userId];
-    income.totalIncome += _amount;
-        // --- Update specific income field based on type ---
-    if      (_incomeType == IncomeType.Sponsor) income.sponsorIncome += _amount;
-    else if (_incomeType == IncomeType.Matrix) income.matrixIncome += _amount;
-    else if (_incomeType == IncomeType.LevelBooster) income.levelBoosterIncome += _amount;  
-    else if (_incomeType == IncomeType.Community) income.communityIncome += _amount;   
-    else if (_incomeType == IncomeType.Pool) income.poolIncome += _amount;
-    else if (_incomeType == IncomeType.Booster) income.boosterIncome += _amount;
-    else if (_incomeType == IncomeType.WeeklyContest) income.weeklyContestIncome += _amount;
-    else if (_incomeType == IncomeType.MonthlyRoyalty) income.monthlyRoyalty += _amount;
-    else if (_incomeType == IncomeType.MonthlyTopRoyalty) income.monthlyTopRoyalty += _amount;
+        UserIncome storage income = userIncomes[_userId];
+        income.totalIncome += _amount;
+            // --- Update specific income field based on type ---
+        if      (_incomeType == IncomeType.Sponsor) income.sponsorIncome += _amount;
+        else if (_incomeType == IncomeType.Matrix) income.matrixIncome += _amount;
+        else if (_incomeType == IncomeType.LevelBooster) income.levelBoosterIncome += _amount;  
+        else if (_incomeType == IncomeType.Community) income.communityIncome += _amount;   
+        else if (_incomeType == IncomeType.Pool) income.poolIncome += _amount;
+        else if (_incomeType == IncomeType.Booster) income.boosterIncome += _amount;
+        else if (_incomeType == IncomeType.WeeklyContest) income.weeklyContestIncome += _amount;
+        else if (_incomeType == IncomeType.MonthlyRoyalty) income.monthlyRoyalty += _amount;
+        else if (_incomeType == IncomeType.TopRoyalty) income.topRoyalty += _amount;
 
+        
+
+        else revert("Unknown income type");
     
+            // --- Update total income ---
+        
 
-    else revert("Unknown income type");
-   
-        // --- Update total income ---
+        // Record income in user history
+        // incomeHistory[_userId].push(Income({
+        //     fromUserId: _fromUserId,
+        //     amount: _amount,
+        //     packageLevel: _packageLevel,
+        //     timestamp: block.timestamp,
+        //     incomeType: _incomeType
+        // }));
+        //usdt.transfer(userAddress, _amount);
     
-
-    // Record income in user history
-    // incomeHistory[_userId].push(Income({
-    //     fromUserId: _fromUserId,
-    //     amount: _amount,
-    //     packageLevel: _packageLevel,
-    //     timestamp: block.timestamp,
-    //     incomeType: _incomeType
-    // }));
-    //usdt.transfer(userAddress, _amount);
-  
-    usdt.safeTransfer(userAddress, _amount);
-     emit IncomeDistribution(userAddress, users[_fromUserId].account, _amount,_packageLevel, _incomeType, block.timestamp );
-    //emit IncomeDistributed(userAddress, users[_fromUserId].account, _amount, _packageLevel, _incomeType);
-}
-
-function _tryWeeklyContestQualify(uint _userId, uint _roundId)internal {
-        if (!weeklyUserdtl[_roundId][_userId].isQualified) {
-                _weeklyContestQualifier(_userId, _roundId);
-        }
+        usdt.safeTransfer(userAddress, _amount);
+        emit IncomeDistribution(userAddress, users[_fromUserId].account, _amount,_packageLevel, _incomeType, block.timestamp );
+        //emit IncomeDistributed(userAddress, users[_fromUserId].account, _amount, _packageLevel, _incomeType);
     }
+
+    function _tryWeeklyContestQualify(uint _userId, uint _roundId)internal {
+            if (!weeklyUserdtl[_roundId][_userId].isQualified) {
+                    _weeklyContestQualifier(_userId, _roundId);
+            }
+    }
+
     function _weeklyContestQualifier(uint _userId, uint _roundId)internal {
        
-        uint currentRound = currentWeeklyRound;        
+       // uint currentRound = currentWeeklyRound;        
         require(_roundId == currentWeeklyRound, "Invalid round");
         require(!weeklyContestdtl[_roundId].closed, "Round closed");
         UserBooster memory userBoosterJoinDtl = userBoosterdtl[1][_userId];
 
-        bool hasEnoughDirects = weeklyUserDirects[currentRound][_userId].length >= 5;
+        bool hasEnoughDirects = weeklyUserDirects[_roundId][_userId].length >= 5;
         bool boosterEarlyJoin = (
             userBoosterJoinDtl.id == _userId && 
             userBoosterJoinDtl.joinTime <= users[_userId].registrationTime + TIME_STEP
@@ -364,15 +413,85 @@ function _tryWeeklyContestQualify(uint _userId, uint _roundId)internal {
         require(hasEnoughDirects || boosterEarlyJoin, "Not eligible for weekly contest");
         //require(weeklyUserDirects[currentRound][_userId].length >=5 ||  (userBoosterJoinDtl.id == _userId && userBoosterJoinDtl.joinTime <= users[_userId].registrationTime + TIME_STEP), "not eligible"); // (userBoosterJoinDtl.id = _userId && userBoosterJoinDtl.joinTime <= users[_userId].registrationTime)
         
-        weeklyUser storage weeklyuserdtl = weeklyUserdtl[currentRound][_userId];
+        weeklyUser storage weeklyuserdtl = weeklyUserdtl[_roundId][_userId];
         if (weeklyuserdtl.isQualified) return;
         require(!weeklyuserdtl.isQualified, "already Qualified");
 
-        weeklyuserdtl.id = _userId;
-        weeklyuserdtl.joinTime = block.timestamp;
-        weeklyuserdtl.roundId = currentRound;
+        uint nowTime = block.timestamp;
+
+        weeklyuserdtl.joinTime = nowTime;
+        weeklyuserdtl.roundId = _roundId;
         weeklyuserdtl.isQualified = true;
    
-        emit WeeklyContestQualified(currentRound, _userId, block.timestamp);
+        emit WeeklyContestQualified(_roundId, _userId, nowTime);
     }
+
+    function _tryMonthlyRoyaltyQualify(uint _userId, uint _roundId)internal {
+            if (!monthlyRoyaltyUserdtl[_userId].isQualified) {
+                    _monthlyRoyaltyQualifier(_userId, _roundId);
+            }
+    }
+
+    function _monthlyRoyaltyQualifier(uint _userId, uint _roundId)internal {      
+       
+        require(_roundId == currentMonthlyRound, "Invalid round");
+        require(!monthlyRoyaltydtl[_roundId].closed, "Round closed");
+       
+        User storage user = users[_userId];        
+
+        require(user.level10Time > 0, "User not level 10");
+        bool withinTime = user.level10Time <= user.registrationTime + MONTHLY_ROYALTY_TIME;
+        bool qualifiedByLevel = user.level >= MONTHLY_ROYALTY_LEVEL;
+        bool qualifiedByDirects = user.monthlyUserDirectCount >= MONTHLY_ROYALTY_DIRECT;
+        require(withinTime && qualifiedByLevel && qualifiedByDirects, "Not eligible");
+        
+        monthlyRoyaltyUser storage userRoyalty  = monthlyRoyaltyUserdtl[_userId];
+       
+        //if (userRoyalty.isQualified) return;
+        require(!userRoyalty.isQualified, "already Qualified");
+
+        uint nowTime = block.timestamp;
+        //userRoyalty.id = _userId;
+        userRoyalty.joinTime = nowTime;
+        userRoyalty.qualifiedRoundId = _roundId;
+        userRoyalty.isQualified = true;
+   
+        emit MonthlyRoyaltyQualified(_roundId, _userId, nowTime);
+    }
+
+    
+
+    function _tryTopRoyaltyQualify(uint _userId, uint _roundId)internal {
+            if (!topRoyaltyUserdtl[_userId].isQualified) {
+                    _topRoyaltyQualifier(_userId, _roundId);
+            }
+    }
+
+    function _topRoyaltyQualifier(uint _userId, uint _roundId)internal {      
+       
+        require(_roundId == topRoyaltyRound, "Invalid round");
+        require(!topRoyaltydtl[_roundId].closed, "Round closed");
+       
+        User storage user = users[_userId];        
+
+        require(user.level15Time > 0, "User not level 15");
+        bool withinTime = user.level15Time <= user.registrationTime + TOP_ROYALTY_TIME;
+        bool qualifiedByLevel = user.level >= TOP_ROYALTY_LEVEL;
+        bool qualifiedByDirects = user.topRoyaltyDirectCount >= TOP_ROYALTY_DIRECT;
+        require(withinTime && qualifiedByLevel && qualifiedByDirects, "Not eligible");
+        
+        topRoyaltyUser storage userRoyalty  = topRoyaltyUserdtl[_userId];
+       
+        //if (userRoyalty.isQualified) return;
+        require(!userRoyalty.isQualified, "already Qualified");
+
+        uint nowTime = block.timestamp;
+        //userRoyalty.id = _userId;
+        userRoyalty.joinTime = nowTime;
+        userRoyalty.qualifiedRoundId = _roundId;
+        userRoyalty.isQualified = true;
+   
+        emit MonthlyRoyaltyQualified(_roundId, _userId, nowTime);
+    }
+
 }

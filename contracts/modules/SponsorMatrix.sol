@@ -76,6 +76,7 @@ contract Nanakshahi is Storage{
         
         uint nextLevel = user.level;
         uint packagePrice = packages[nextLevel];
+        uint nowTime = block.timestamp;
         
         // Transfer USDT for the next package
         usdt.transferFrom(msg.sender, address(this), packagePrice);
@@ -86,9 +87,9 @@ contract Nanakshahi is Storage{
           user.deposits.push(Deposit({
             amount: packagePrice,
             withdrawn: 0,
-            start: block.timestamp,
+            start: nowTime,
             depositType:1
-        }));
+        }));// SHOULD BE REMOVE AND REPLACE WITH EVENT THAT WIL BE COST EFFECTIVE
    
         // Distribute income
         uint creatorShare = packagePrice * 5 / 100; // 5% to creator
@@ -112,9 +113,46 @@ contract Nanakshahi is Storage{
         uint boosterIncome = packagePrice * 20 / 100;
         _distributeLevelBoosterIncome(user.uplineId, _userId, boosterIncome, nextLevel + 1, nextLevel);
 
-       
+       // check for monthly royalty
+        if((nextLevel+1) == MONTHLY_ROYALTY_LEVEL){
+            
+            user.level10Time = nowTime;
+            User storage _user = users[_userId];
+           // monthlyUserDirects[_user.sponsorId].push(_userId);
+
+            User storage _sponsor = users[user.sponsorId];
+            _sponsor.monthlyUserDirectCount +=1;
+            if((_sponsor.monthlyUserDirectCount >= MONTHLY_ROYALTY_DIRECT) && (nowTime <= _sponsor.registrationTime + MONTHLY_ROYALTY_TIME) && (_sponsor.level >= MONTHLY_ROYALTY_LEVEL)){
+                _tryMonthlyRoyaltyQualify( _user.sponsorId, currentMonthlyRound);
+            }
+
+
+            if((_user.monthlyUserDirectCount >= MONTHLY_ROYALTY_DIRECT) && (_user.level10Time <= _user.registrationTime + MONTHLY_ROYALTY_TIME) && (_user.level == MONTHLY_ROYALTY_LEVEL)  ){
+                _tryMonthlyRoyaltyQualify( _userId, currentMonthlyRound);            
+            }
+        }
+
+
+        // check for top royalty
+        if((nextLevel+1) == TOP_ROYALTY_LEVEL){
+            
+            user.level15Time = nowTime;
+            User storage _user = users[_userId];
+           // monthlyUserDirects[_user.sponsorId].push(_userId);
+
+            User storage _sponsor = users[user.sponsorId];
+            _sponsor.topRoyaltyDirectCount +=1;
+            if((_sponsor.topRoyaltyDirectCount >= TOP_ROYALTY_DIRECT) && (nowTime <= _sponsor.registrationTime + TOP_ROYALTY_TIME) && (_sponsor.level >= TOP_ROYALTY_LEVEL)){
+                _tryTopRoyaltyQualify( _user.sponsorId, topRoyaltyRound);
+            }
+
+
+            if((_user.topRoyaltyDirectCount >= TOP_ROYALTY_DIRECT) &&(_user.level15Time <= _user.registrationTime + TOP_ROYALTY_TIME) && (_user.level == TOP_ROYALTY_LEVEL)  ){
+                _tryTopRoyaltyQualify( _userId, topRoyaltyRound);            
+            }
+        }
         
-        emit Upgrade(msg.sender, _userId, nextLevel + 1, "Slot");
+        emit Upgrade(msg.sender, _userId, nextLevel + 1, "Sponsorship structure", nowTime);
     }
     
     function _applyGlobalCapping(uint _userId, uint _amount) internal view returns (uint) {
@@ -338,58 +376,58 @@ contract Nanakshahi is Storage{
         _sendToCreator(_amount);
     }
         
-    function _distributeLevelIncome(uint _startId,uint _fromId,uint _amount,uint _packageLevel,uint _targetLevel) private {
-        if (_startId == 0 || _startId == defaultRefId) {
-            _sendToCreator(_amount);
-            return;
-        }
+    // function _distributeLevelIncome(uint _startId,uint _fromId,uint _amount,uint _packageLevel,uint _targetLevel) private {
+    //     if (_startId == 0 || _startId == defaultRefId) {
+    //         _sendToCreator(_amount);
+    //         return;
+    //     }
 
-        // Step 1: move up to the target (n-th) upline
-        uint currentId = _startId;
-        uint hops = 1;
-        while (hops < _targetLevel) {
-            currentId = users[currentId].uplineId;
-            hops++;
-            if (currentId == 0 || currentId == defaultRefId) {
-                _sendToCreator(_amount);
-                return;
-            }
-        }
+    //     // Step 1: move up to the target (n-th) upline
+    //     uint currentId = _startId;
+    //     uint hops = 1;
+    //     while (hops < _targetLevel) {
+    //         currentId = users[currentId].uplineId;
+    //         hops++;
+    //         if (currentId == 0 || currentId == defaultRefId) {
+    //             _sendToCreator(_amount);
+    //             return;
+    //         }
+    //     }
 
-        // Step 2: from the target upline, roll upward until someone qualifies
-        uint depth = 0;
-        while (currentId != 0 && currentId != defaultRefId && depth < maxLayers) {
-            User storage u = users[currentId];
+    //     // Step 2: from the target upline, roll upward until someone qualifies
+    //     uint depth = 0;
+    //     while (currentId != 0 && currentId != defaultRefId && depth < maxLayers) {
+    //         User storage u = users[currentId];
 
-            // eligibility: at least 2 directs AND level >= purchased level
-            if (u.level >= _packageLevel) //u.directTeam >= 2 && 
-            {
-                usdt.transfer(u.account, _amount);
-                // bookkeeping
-                UserIncome storage inc = userIncomes[currentId];
-                inc.totalIncome += _amount;
-                inc.levelIncome += _amount;
+    //         // eligibility: at least 2 directs AND level >= purchased level
+    //         if (u.level >= _packageLevel) //u.directTeam >= 2 && 
+    //         {
+    //             usdt.transfer(u.account, _amount);
+    //             // bookkeeping
+    //             UserIncome storage inc = userIncomes[currentId];
+    //             inc.totalIncome += _amount;
+    //             inc.levelIncome += _amount;
 
-                incomeHistory[currentId].push(Income({
-                    fromUserId: _fromId,
-                    amount: _amount,
-                    packageLevel: _packageLevel,
-                    timestamp: block.timestamp,
-                    incomeType: 3 // Level income
-                }));
+    //             incomeHistory[currentId].push(Income({
+    //                 fromUserId: _fromId,
+    //                 amount: _amount,
+    //                 packageLevel: _packageLevel,
+    //                 timestamp: block.timestamp,
+    //                 incomeType: 3 // Level income
+    //             }));
 
-                emit IncomeDistributed(u.account, users[_fromId].account, _amount, _packageLevel, 3);
-                return;
-            }
+    //             emit IncomeDistributed(u.account, users[_fromId].account, _amount, _packageLevel, 3);
+    //             return;
+    //         }
 
-            // not eligible → try the next sponsor up
-            currentId = u.uplineId;
-            depth++;
-        }
+    //         // not eligible → try the next sponsor up
+    //         currentId = u.uplineId;
+    //         depth++;
+    //     }
 
-        // nobody eligible up the chain
-        _sendToCreator(_amount);
-    }
+    //     // nobody eligible up the chain
+    //     _sendToCreator(_amount);
+    // }
 
     
     function _distributeLevelBoosterIncome(uint _startId, uint _fromId, uint _amount,uint _packageLevel,uint _maxLevel) private {

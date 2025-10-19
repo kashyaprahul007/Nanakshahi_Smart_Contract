@@ -213,11 +213,17 @@
 					{
 						"indexed": false,
 						"internalType": "uint256",
-						"name": "joinTime",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "claimTime",
 						"type": "uint256"
 					}
 				],
-				"name": "MonthlyContestQualified",
+				"name": "MonthlyRewardClaim",
 				"type": "event"
 			},
 			{
@@ -238,17 +244,11 @@
 					{
 						"indexed": false,
 						"internalType": "uint256",
-						"name": "perUserReward",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "claimTime",
+						"name": "joinTime",
 						"type": "uint256"
 					}
 				],
-				"name": "MonthlyRewardClaim",
+				"name": "MonthlyRoyaltyQualified",
 				"type": "event"
 			},
 			{
@@ -311,6 +311,111 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalUsers",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalDistributed",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "leftoverReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "endTime",
+						"type": "uint256"
+					}
+				],
+				"name": "TopRoyaltyClosed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "joinTime",
+						"type": "uint256"
+					}
+				],
+				"name": "TopRoyaltyQualified",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "claimTime",
+						"type": "uint256"
+					}
+				],
+				"name": "TopRoyaltyRewardClaim",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
 						"indexed": true,
 						"internalType": "address",
 						"name": "user",
@@ -333,6 +438,12 @@
 						"internalType": "string",
 						"name": "depositType",
 						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "upgradeTime",
+						"type": "uint256"
 					}
 				],
 				"name": "Upgrade",
@@ -501,6 +612,45 @@
 			},
 			{
 				"inputs": [],
+				"name": "MONTHLY_ROYALTY_DIRECT",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MONTHLY_ROYALTY_LEVEL",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MONTHLY_ROYALTY_TIME",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "MONTH_DURATION",
 				"outputs": [
 					{
@@ -554,6 +704,45 @@
 			{
 				"inputs": [],
 				"name": "TIME_STEP",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "TOP_ROYALTY_DIRECT",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "TOP_ROYALTY_LEVEL",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "TOP_ROYALTY_TIME",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -881,6 +1070,45 @@
 			},
 			{
 				"inputs": [],
+				"name": "topRoyaltyReward",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "topRoyaltyRound",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "topRoyaltyStartTime",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "totalUsers",
 				"outputs": [
 					{
@@ -991,11 +1219,11 @@
 			]
 		},
 		"contracts/modules/Storage.sol": {
-			"keccak256": "0x0d7ff2640958a884f239b713548dc5eb5bfbbbf9304b7561258701c8b3508a1d",
+			"keccak256": "0xfdca77efb4adc564a11cfeb1d285a517ccaa87c63e1e49d380ad6406f5210186",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://8ca5f637a6c2243b01745b8da1476bf14b3cf69b6679c3751768ad587d265f14",
-				"dweb:/ipfs/QmX4gCUgVvu7gFJU7mqeS65uguwnJ7a16Pph7UTLqRMEYo"
+				"bzz-raw://605b0acb462baf239cc9f8e6e5c83cf9edfd882d996d7ff55d55352204bcd63e",
+				"dweb:/ipfs/QmTU5Z4KcYr3vsfh2XwxuMEyKm9JBd7wwj3UvgPr3MtFWB"
 			]
 		}
 	},
