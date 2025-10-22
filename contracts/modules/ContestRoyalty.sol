@@ -8,18 +8,7 @@ contract ContestRoyalty is Storage  {
 
     
     constructor() {
-        currentWeeklyStartTime = block.timestamp;
-        currentMonthlyStartTime = block.timestamp;
-        topRoyaltyStartTime = block.timestamp;
-
-        WeeklyTotalReward = 0;
-        currentWeeklyRound = 1;
-
-        monthlyTotalReward = 0;
-        currentMonthlyRound = 1;    
-
-        topRoyaltyReward = 0;
-        topRoyaltyRound = 1;
+  
     }
 
     function _closeTopRoyalty() internal {

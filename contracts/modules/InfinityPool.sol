@@ -63,7 +63,7 @@
             depositType: 10 // Retopup via earning
         }));
 
-        emit Upgrade(msg.sender, _userId, _poolId, "Pool ReTopup (Earning)");
+        emit Upgrade(msg.sender, _userId, _poolId, packagePrice, "Pool ReTopup (Earning)",  block.timestamp);
     
 
    
@@ -107,14 +107,14 @@
         _placeInPool(targetPool, _userId, packagePrice);
 
         // Record deposit
-        user.deposits.push(Deposit({
-            amount: packagePrice,
-            withdrawn: 0,
-            start: block.timestamp,
-            depositType: 11 // Upgrade via earning
-        }));
+        // user.deposits.push(Deposit({
+        //     amount: packagePrice,
+        //     withdrawn: 0,
+        //     start: block.timestamp,
+        //     depositType: 11 // Upgrade via earning
+        // }));
 
-        emit Upgrade(msg.sender, _userId, targetPool + 1, "Pool Upgrade (Earning)");
+        emit Upgrade(msg.sender, _userId, targetPool + 1, packagePrice, "Pool Upgrade (Earning)", block.timestamp);
     
     }
 
@@ -144,25 +144,36 @@
         // Transfer USDT for the next package
         usdt.transferFrom(msg.sender, address(this), packagePrice);
         
+        uint nowTime = block.timestamp ;
         if(nextPool == 0){
-            uint _sponsorId = user.sponsorId;
-            if(users[_sponsorId].registrationTime + 172800 <= block.timestamp){
-                 users[_sponsorId].directPoolQualified += 1;
+            user.poolStartTime = nowTime;
+            User storage sponsor = users[user.sponsorId];
+           // uint _sponsorId = user.sponsorId;
+            if(sponsor.registrationTime + ROI_2X_TIME <= nowTime && sponsor.roiCap == 15){
+                 sponsor.directPoolQualified += 1;
+                if( sponsor.directPoolQualified > 1){
+                    sponsor.roiCap = 20;
+                   
+                }
             }
+        }
+
+        if(user.directPoolQualified>1 &&  user.registrationTime + ROI_2X_TIME >= user.poolStartTime  && user.roiCap == 15){
+            user.roiCap = 20;  
         }
         user.poollevel += 1;
         userHasPool[_userId][nextPool] = true;
         user.poolDeposit += packagePrice;
         _placeInPool(nextLevel, _userId, packagePrice);
             // add in Deposit 
-        user.deposits.push(Deposit({
-            amount: packagePrice,
-            withdrawn: 0,
-            start: block.timestamp,
-            depositType:10
-        }));
+        // user.deposits.push(Deposit({
+        //     amount: packagePrice,
+        //     withdrawn: 0,
+        //     start: block.timestamp,
+        //     depositType:10
+        // }));
 
-        emit Upgrade(msg.sender, _userId, nextPool + 1, "Pool");
+        emit Upgrade(msg.sender, _userId, nextPool + 1, packagePrice, "Pool", nowTime);
     }
 
     
@@ -236,30 +247,33 @@
        
 
         UserIncome storage inc = userIncomes[receiverId];
-        inc.totalIncome += amount;
+        //inc.totalIncome += amount;
+        IncomeType incomeType= IncomeType.Pool;
         if(_incomeType == 10){
              inc.poolIncome += amount;
         }
         if(_incomeType == 11){
              inc.boosterIncome += amount;
+             incomeType = IncomeType.Booster;
         }
         
        
 
-        incomeHistory[receiverId].push(Income({
-            fromUserId: fromId,
-            amount: amount,
-            packageLevel: packageLevel,
-            timestamp: block.timestamp,
-            incomeType: _incomeType // infintiy pool income
-        }));
+        // incomeHistory[receiverId].push(Income({
+        //     fromUserId: fromId,
+        //     amount: amount,
+        //     packageLevel: packageLevel,
+        //     timestamp: block.timestamp,
+        //     incomeType: _incomeType // infintiy pool income
+        // }));
 
-        address to = users[receiverId].account;
+        // address to = users[receiverId].account;
         uint netamount = (amount* 95 )/100;
-        usdt.transfer(to, netamount);
+        _distributeIncome(receiverId, fromId, netamount, packageLevel, incomeType);
+        //usdt.transfer(to, netamount);
         _sendToCreator((amount*5) / 100);
 
-        emit IncomeDistributed(to, users[fromId].account, amount, packageLevel, _incomeType);
+        //emit IncomeDistributed(to, users[fromId].account, amount, packageLevel, _incomeType);
     }
    
    
@@ -292,14 +306,14 @@
         user.boosterDeposit += packagePrice;
         _placeInBooster(nextPool, _userId, packagePrice);
             // add in Deposit 
-        user.deposits.push(Deposit({
-            amount: packagePrice,
-            withdrawn: 0,
-            start: block.timestamp,
-            depositType:11
-        }));
+        // user.deposits.push(Deposit({
+        //     amount: packagePrice,
+        //     withdrawn: 0,
+        //     start: block.timestamp,
+        //     depositType:11
+        // }));
 
-        emit Upgrade(msg.sender, _userId, nextPool + 1, "Booster");
+        emit Upgrade(msg.sender, _userId, nextPool + 1, packagePrice, "Booster", block.timestamp);
     }
 
     
@@ -356,7 +370,7 @@
             return;
         }
        
-           // _distributePoolIncome( parentId, poolId, userMainId, packagePrice);
+         
     }
     
    

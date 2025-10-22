@@ -20,6 +20,7 @@ contract Storage is ReentrancyGuard {
 
     uint256 public constant PERCENTS_DIVIDER = 10000;
     uint256 public constant TIME_STEP = 1 days;
+    uint256 public constant ROI_2X_TIME = 2 days;
     uint256 public constant MONTHLY_ROYALTY_TIME = 100 days;
     uint256 public constant TOP_ROYALTY_TIME = 450 days;
     uint256 public constant ROI_CAP_MULTIPLIER = 15; // 1.5x
@@ -39,8 +40,22 @@ contract Storage is ReentrancyGuard {
 
         // --- Community bonus accrual (pull-based) ---
     uint256 public constant ACC_PRECISION = 1e18;
+    
     uint256 public communityAccPerUser;                 // global accumulator
-    mapping(uint => uint256) internal communityDebt;      // user snapshot
+    //mapping(uint => uint256) internal communityDebt;      // user snapshot
+
+         // --- Community bonus accrual (pull-based) package wise---
+   
+
+    // Separate accumulator for each package level
+    mapping(uint256 => uint256) public communityAccPerPackage;
+
+    // Separate debt per user per package
+    mapping(uint256 => mapping(uint256 => uint256)) public communityDebt; 
+    // communityDebt[userId][packageLevel]
+
+    // List of qualified users per package
+    mapping(uint256 => uint256) public packageQualifiedUsers; // packageLevel => userId[]
 
     uint[] public packages = [
         15 * 1e18,      // 15$
@@ -82,8 +97,10 @@ contract Storage is ReentrancyGuard {
         uint directPoolQualified; // Direct referrals count in infinity pool
         uint totalMatrixTeam; // Total users in matrix
         uint totalDeposit;
+        uint roiCap;
         uint poollevel;
         uint poolDeposit;
+        uint poolStartTime;
         uint boosterlevel;
         uint boosterDeposit;
         uint registrationTime;
@@ -109,6 +126,14 @@ contract Storage is ReentrancyGuard {
         uint topRoyalty;        // <-- weekly contest Income
     }
 
+    struct UserPackage{       
+        uint roiCap;
+        uint currentIncome; 
+        uint closingAmount;    
+        bool closed;
+       
+    }
+
     struct Income {
         uint fromUserId;
         uint amount;
@@ -130,14 +155,14 @@ contract Storage is ReentrancyGuard {
     }
 
 
-
-    mapping(address => uint) internal addressToId;
-    mapping(uint => User) internal users;
-    mapping(uint => UserIncome) internal userIncomes; // New mapping for income data
-    mapping(uint => Income[]) internal incomeHistory;
-    mapping(uint => mapping(uint => uint[])) internal teams; // Matrix team structure by level
-    mapping(uint => uint) internal matrixDirect; // Count of direct matrix referrals
-    mapping(uint => uint[]) internal directReferrals;
+    mapping(uint => mapping(uint => UserPackage)) public userPackage;
+     mapping(address => uint) public addressToId;
+    mapping(uint => User) public users;
+    mapping(uint => UserIncome) public userIncomes; // New mapping for income data
+    mapping(uint => Income[]) public incomeHistory;
+    mapping(uint => mapping(uint => uint[])) public teams; // Matrix team structure by level
+    mapping(uint => uint) public matrixDirect; // Count of direct matrix referrals
+    mapping(uint => uint[]) public directReferrals;
 
     event UserJoined(uint8 indexed matrixId, uint32 indexed userId, address indexed user, uint32 parentId, address parentAddr, uint8 position);
     event RewardSent(address indexed to, uint256 amount, string level);
@@ -145,11 +170,11 @@ contract Storage is ReentrancyGuard {
 
      // Events
     event Registration(address indexed user, address indexed sponsor, uint indexed userId, uint uplineId);
-    event Upgrade(address indexed user, uint indexed userId, uint packageLevel, string depositType, uint upgradeTime);
+    event Upgrade(address indexed user, uint indexed userId, uint packageLevel, uint packagePrice, string depositType, uint upgradeTime);
     event IncomeDistributed(address indexed to, address indexed from, uint amount, uint packageLevel, uint incomeType);
     event LotteryReward(address indexed winner, uint indexed fromUserId, uint amount, uint timestamp);
     event CommunityBonusDistributed(uint amount, uint usersCount, uint perUser);
-    event IncomeDistribution(address indexed to,address indexed from,uint256 amount,uint256 packageLevel,IncomeType incomeType,uint256 timestamp);
+    event IncomeDistribution( address indexed to, uint indexed toId, uint indexed fromId,uint256 amount,uint256 packageLevel,IncomeType incomeType,uint256 timestamp);
   
     // Infinity Pool and booster bonus 
 
@@ -184,19 +209,19 @@ contract Storage is ReentrancyGuard {
     }
 
     /* mapping for Infinity Pool*/
-    mapping(uint =>  mapping(uint => UserPoolTopup)) internal userPooltopup;
+    mapping(uint =>  mapping(uint => UserPoolTopup)) public userPooltopup;
 
-    mapping(uint =>  mapping(uint => UserPool)) internal userPooldtl;
-    mapping(uint => mapping(uint => uint[])) internal userChildren;// in each pool id wise
-    mapping(uint => mapping(uint => uint[])) internal userIdPerPool;// will store user ids pool wise
-    mapping(uint => uint[]) internal poolUsers; // store all users  pool wise
-    mapping(uint => mapping(uint => bool)) internal userHasPool; 
+    mapping(uint =>  mapping(uint => UserPool)) public userPooldtl;
+    mapping(uint => mapping(uint => uint[])) public userChildren;// in each pool id wise
+    mapping(uint => mapping(uint => uint[])) public userIdPerPool;// will store user ids pool wise
+    mapping(uint => uint[]) public poolUsers; // store all users  pool wise
+    mapping(uint => mapping(uint => bool)) public userHasPool; 
 
     /* mapping for Global Booster */
-    mapping(uint =>  mapping(uint => UserBooster)) internal userBoosterdtl;
-    mapping(uint =>  mapping(uint => uint[])) internal userBoosterChildren;
-    mapping(uint => uint[]) internal boosterUsers;  // store all users booster wise
-    mapping(uint => mapping(uint => bool)) internal userHasbooster; 
+    mapping(uint =>  mapping(uint => UserBooster)) public userBoosterdtl;
+    mapping(uint =>  mapping(uint => uint[])) public userBoosterChildren;
+    mapping(uint => uint[]) public boosterUsers;  // store all users booster wise
+    mapping(uint => mapping(uint => bool)) public userHasbooster; 
 
    
     // weekly contest
@@ -231,10 +256,10 @@ contract Storage is ReentrancyGuard {
         bool isClaimed; 
         bool isQualified;
     }
-    mapping (uint => WeeklyContest) internal weeklyContestdtl;// details of weekly contest
-    mapping(uint=> uint[]) weeklyQualifiedUsers; // qualifieduserweekly
-    mapping(uint => mapping(uint => weeklyUser)) internal weeklyUserdtl;// details of weekly user))
-    mapping(uint => mapping(uint => uint[])) internal weeklyUserDirects;//details users direct in current weekly round
+    mapping (uint => WeeklyContest) public weeklyContestdtl;// details of weekly contest
+    mapping(uint=> uint[]) public weeklyQualifiedUsers; // qualifieduserweekly
+    mapping(uint => mapping(uint => weeklyUser)) public weeklyUserdtl;// details of weekly user))
+    mapping(uint => mapping(uint => uint[])) public weeklyUserDirects;//details users direct in current weekly round
     event WeeklyClosed(uint roundId, uint totalUsers, uint perUserReward, uint totalReward, uint totalDistributed, uint leftoverReward, uint endTime);
     event WeeklyRewardClaim(uint roundId, uint userId, uint perUserReward,  uint claimTime);
     event WeeklyContestQualified(uint roundId, uint userId, uint joinTime);
@@ -270,10 +295,10 @@ contract Storage is ReentrancyGuard {
         mapping(uint => bool) isClaimed; 
         bool isQualified;
     }
-    mapping (uint => monthlyRoyalty) internal monthlyRoyaltydtl;// details of monthly royalty
-    uint[] monthlyQualifiedUsers; // qualified user monthly royalty
-    mapping(uint => monthlyRoyaltyUser) internal monthlyRoyaltyUserdtl;
-    mapping(uint => uint[]) internal monthlyUserDirects;//details users direct in monthly Royalty at 10th level
+    mapping (uint => monthlyRoyalty) public monthlyRoyaltydtl;// details of monthly royalty
+    uint[] public monthlyQualifiedUsers; // qualified user monthly royalty
+    mapping(uint => monthlyRoyaltyUser) public monthlyRoyaltyUserdtl;
+    mapping(uint => uint[]) public monthlyUserDirects;//details users direct in monthly Royalty at 10th level
 
     event MonthlyClosed(uint roundId, uint totalUsers, uint perUserReward, uint totalReward, uint totalDistributed, uint leftoverReward, uint endTime);
     event MonthlyRewardClaim(uint roundId, uint userId, uint perUserReward,  uint claimTime);
@@ -305,10 +330,10 @@ contract Storage is ReentrancyGuard {
         mapping(uint => bool) isClaimed; 
         bool isQualified;
     }
-    mapping (uint => topRoyalty) internal topRoyaltydtl;// details of top royalty contest
-    uint[] topRoyaltyQualifiedUsers; // qualified user top royalty
-    mapping(uint => topRoyaltyUser) internal topRoyaltyUserdtl;
-    mapping(uint => uint[]) internal topRoyaltyUserDirects;//details users direct in top Royalty at 15th level
+    mapping (uint => topRoyalty) public topRoyaltydtl;// details of top royalty contest
+    uint[] public topRoyaltyQualifiedUsers; // qualified user top royalty
+    mapping(uint => topRoyaltyUser) public topRoyaltyUserdtl;
+    mapping(uint => uint[]) public topRoyaltyUserDirects;//details users direct in top Royalty at 15th level
 
     event TopRoyaltyClosed(uint roundId, uint totalUsers, uint perUserReward, uint totalReward, uint totalDistributed, uint leftoverReward, uint endTime);
     event TopRoyaltyRewardClaim(uint roundId, uint userId, uint perUserReward,  uint claimTime);
@@ -342,7 +367,7 @@ contract Storage is ReentrancyGuard {
     //     timestamp: block.timestamp,
     //     incomeType: 5
     // }));
-    emit IncomeDistribution(creatorWallet, creatorWallet, _amount, 0, IncomeType.Creator, block.timestamp );
+    emit IncomeDistribution(creatorWallet, defaultRefId, defaultRefId, _amount, 0, IncomeType.Creator, block.timestamp );
 }
 
 
@@ -358,7 +383,10 @@ contract Storage is ReentrancyGuard {
     //( userAddress, _amount);
 
         UserIncome storage income = userIncomes[_userId];
-        income.totalIncome += _amount;
+        if(_incomeType != IncomeType.Booster && _incomeType != IncomeType.Pool){
+              income.totalIncome += _amount;
+        }
+      
             // --- Update specific income field based on type ---
         if      (_incomeType == IncomeType.Sponsor) income.sponsorIncome += _amount;
         else if (_incomeType == IncomeType.Matrix) income.matrixIncome += _amount;
@@ -369,26 +397,32 @@ contract Storage is ReentrancyGuard {
         else if (_incomeType == IncomeType.WeeklyContest) income.weeklyContestIncome += _amount;
         else if (_incomeType == IncomeType.MonthlyRoyalty) income.monthlyRoyalty += _amount;
         else if (_incomeType == IncomeType.TopRoyalty) income.topRoyalty += _amount;
-
-        
-
         else revert("Unknown income type");
-    
-            // --- Update total income ---
-        
 
-        // Record income in user history
-        // incomeHistory[_userId].push(Income({
-        //     fromUserId: _fromUserId,
-        //     amount: _amount,
-        //     packageLevel: _packageLevel,
-        //     timestamp: block.timestamp,
-        //     incomeType: _incomeType
-        // }));
-        //usdt.transfer(userAddress, _amount);
+        //uint[] memory packagesdtl = packages;
+
+    
+        uint totalIncome = income.totalIncome;
+        uint ROICap = user.roiCap; //15 = 1.5x and 20 = 2x
+        for (uint i = 0; i < user.level; i++) {
+            uint packagePrice = packages[i];
+            UserPackage storage pkg = userPackage[_userId][packagePrice];
+           
+            if (!pkg.closed && totalIncome >= (packagePrice * ROICap) / ROI_CAP_DIVIDER) {
+                pkg.closed = true;
+                pkg.closingAmount = (packagePrice * ROICap) / ROI_CAP_DIVIDER;
+                pkg.roiCap = ROICap;
+                totalIncome -= pkg.closingAmount;
+            }else if (pkg.closed && totalIncome > (packagePrice * ROICap) / ROI_CAP_DIVIDER){
+                 totalIncome -= pkg.closingAmount;
+            }else if (!pkg.closed && totalIncome < (packagePrice * ROICap) / ROI_CAP_DIVIDER) {
+                pkg.currentIncome = totalIncome;
+                break;
+            }
+        }
     
         usdt.safeTransfer(userAddress, _amount);
-        emit IncomeDistribution(userAddress, users[_fromUserId].account, _amount,_packageLevel, _incomeType, block.timestamp );
+        emit IncomeDistribution(userAddress, _userId, _fromUserId, _amount,_packageLevel, _incomeType, block.timestamp );
         //emit IncomeDistributed(userAddress, users[_fromUserId].account, _amount, _packageLevel, _incomeType);
     }
 

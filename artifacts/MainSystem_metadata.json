@@ -22,6 +22,17 @@
 				"type": "constructor"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					}
+				],
+				"name": "SafeERC20FailedOperation",
+				"type": "error"
+			},
+			{
 				"anonymous": false,
 				"inputs": [
 					{
@@ -89,6 +100,55 @@
 					{
 						"indexed": true,
 						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "toId",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "fromId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "packageLevel",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "enum Storage.IncomeType",
+						"name": "incomeType",
+						"type": "uint8"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "IncomeDistribution",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
 						"name": "winner",
 						"type": "address"
 					},
@@ -112,6 +172,111 @@
 					}
 				],
 				"name": "LotteryReward",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalUsers",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalDistributed",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "leftoverReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "endTime",
+						"type": "uint256"
+					}
+				],
+				"name": "MonthlyClosed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "claimTime",
+						"type": "uint256"
+					}
+				],
+				"name": "MonthlyRewardClaim",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "joinTime",
+						"type": "uint256"
+					}
+				],
+				"name": "MonthlyRoyaltyQualified",
 				"type": "event"
 			},
 			{
@@ -151,37 +316,6 @@
 					{
 						"indexed": true,
 						"internalType": "address",
-						"name": "user",
-						"type": "address"
-					},
-					{
-						"indexed": false,
-						"internalType": "string",
-						"name": "period",
-						"type": "string"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "roundId",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					}
-				],
-				"name": "RewardClaimed",
-				"type": "event"
-			},
-			{
-				"anonymous": false,
-				"inputs": [
-					{
-						"indexed": true,
-						"internalType": "address",
 						"name": "to",
 						"type": "address"
 					},
@@ -206,10 +340,53 @@
 				"inputs": [
 					{
 						"indexed": false,
-						"internalType": "string",
-						"name": "period",
-						"type": "string"
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
 					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalUsers",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalDistributed",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "leftoverReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "endTime",
+						"type": "uint256"
+					}
+				],
+				"name": "TopRoyaltyClosed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
 					{
 						"indexed": false,
 						"internalType": "uint256",
@@ -219,17 +396,48 @@
 					{
 						"indexed": false,
 						"internalType": "uint256",
-						"name": "users",
+						"name": "userId",
 						"type": "uint256"
 					},
 					{
 						"indexed": false,
 						"internalType": "uint256",
-						"name": "perUser",
+						"name": "joinTime",
 						"type": "uint256"
 					}
 				],
-				"name": "RoundEnded",
+				"name": "TopRoyaltyQualified",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "claimTime",
+						"type": "uint256"
+					}
+				],
+				"name": "TopRoyaltyRewardClaim",
 				"type": "event"
 			},
 			{
@@ -255,9 +463,21 @@
 					},
 					{
 						"indexed": false,
+						"internalType": "uint256",
+						"name": "packagePrice",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
 						"internalType": "string",
 						"name": "depositType",
 						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "upgradeTime",
+						"type": "uint256"
 					}
 				],
 				"name": "Upgrade",
@@ -310,30 +530,149 @@
 				"anonymous": false,
 				"inputs": [
 					{
-						"indexed": true,
-						"internalType": "address",
-						"name": "user",
-						"type": "address"
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
 					},
 					{
 						"indexed": false,
-						"internalType": "string",
-						"name": "period",
-						"type": "string"
+						"internalType": "uint256",
+						"name": "totalUsers",
+						"type": "uint256"
 					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalDistributed",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "leftoverReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "endTime",
+						"type": "uint256"
+					}
+				],
+				"name": "WeeklyClosed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
 					{
 						"indexed": false,
 						"internalType": "uint256",
 						"name": "roundId",
 						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "joinTime",
+						"type": "uint256"
 					}
 				],
-				"name": "UserQualified",
+				"name": "WeeklyContestQualified",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "roundId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "userId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "perUserReward",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "claimTime",
+						"type": "uint256"
+					}
+				],
+				"name": "WeeklyRewardClaim",
 				"type": "event"
 			},
 			{
 				"inputs": [],
 				"name": "ACC_PRECISION",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MONTHLY_ROYALTY_DIRECT",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MONTHLY_ROYALTY_LEVEL",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MONTHLY_ROYALTY_TIME",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -360,6 +699,19 @@
 			{
 				"inputs": [],
 				"name": "PERCENTS_DIVIDER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "ROI_2X_TIME",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -411,7 +763,91 @@
 			},
 			{
 				"inputs": [],
+				"name": "TOP_ROYALTY_DIRECT",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "TOP_ROYALTY_LEVEL",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "TOP_ROYALTY_TIME",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "WEEK_DURATION",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "WeeklyCapping",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "WeeklyTotalReward",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "addressToId",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -428,6 +864,35 @@
 						"internalType": "uint256",
 						"name": "_userId",
 						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_roundId",
+						"type": "uint256"
+					}
+				],
+				"name": "canClaimMonthlyReward",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_userId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "packageLevel",
+						"type": "uint256"
 					}
 				],
 				"name": "claimCommunity",
@@ -439,11 +904,16 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "roundId",
+						"name": "_userId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_roundId",
 						"type": "uint256"
 					}
 				],
-				"name": "claimMonthlyReward",
+				"name": "claimMonthlyCRoyaltyReward",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -452,18 +922,84 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "roundId",
+						"name": "_userId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_roundId",
 						"type": "uint256"
 					}
 				],
-				"name": "claimWeeklyReward",
+				"name": "claimTopRoyaltyReward",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_userId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_roundId",
+						"type": "uint256"
+					}
+				],
+				"name": "claimWeeklyContestReward",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "communityAccPerPackage",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "communityAccPerUser",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "communityDebt",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -502,7 +1038,33 @@
 			},
 			{
 				"inputs": [],
+				"name": "currentMonthlyStartTime",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "currentWeeklyRound",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "currentWeeklyStartTime",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -529,230 +1091,12 @@
 			{
 				"inputs": [
 					{
-						"internalType": "address",
-						"name": "user",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "roundId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "isWeekly",
-						"type": "bool"
-					}
-				],
-				"name": "getUserRoundStatus",
-				"outputs": [
-					{
-						"internalType": "bool",
-						"name": "qualified",
-						"type": "bool"
-					},
-					{
-						"internalType": "bool",
-						"name": "claimed",
-						"type": "bool"
-					},
-					{
-						"internalType": "uint256",
-						"name": "rewardAmount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "roundClosed",
-						"type": "bool"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
 						"internalType": "uint256",
 						"name": "",
 						"type": "uint256"
 					}
 				],
 				"name": "glbBoosterPackages",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"name": "hasClaimedMonthly",
-				"outputs": [
-					{
-						"internalType": "bool",
-						"name": "",
-						"type": "bool"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"name": "hasClaimedWeekly",
-				"outputs": [
-					{
-						"internalType": "bool",
-						"name": "",
-						"type": "bool"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"name": "isMonthlyQualified",
-				"outputs": [
-					{
-						"internalType": "bool",
-						"name": "",
-						"type": "bool"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"name": "isWeeklyQualified",
-				"outputs": [
-					{
-						"internalType": "bool",
-						"name": "",
-						"type": "bool"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "lastLotteryRun",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "lastLotteryWinner",
-				"outputs": [
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "lastMonthlyReset",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "lastWeeklyReset",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "lotteryInterval",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "lotteryPool",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -821,6 +1165,32 @@
 				"type": "function"
 			},
 			{
+				"inputs": [],
+				"name": "monthlyCapping",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "monthlyTotalReward",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
 				"inputs": [
 					{
 						"internalType": "uint256",
@@ -828,42 +1198,12 @@
 						"type": "uint256"
 					}
 				],
-				"name": "monthlyRounds",
+				"name": "packageQualifiedUsers",
 				"outputs": [
 					{
 						"internalType": "uint256",
-						"name": "id",
+						"name": "",
 						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "totalUsers",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "totalReward",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "perUserReward",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "startTime",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "endTime",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "closed",
-						"type": "bool"
 					}
 				],
 				"stateMutability": "view",
@@ -893,6 +1233,11 @@
 					{
 						"internalType": "uint256",
 						"name": "_userId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_packagePrice",
 						"type": "uint256"
 					}
 				],
@@ -929,58 +1274,6 @@
 					}
 				],
 				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "qualifiedMonthly",
-				"outputs": [
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "qualifiedWeekly",
-				"outputs": [
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "qualifyMonthly",
-				"outputs": [],
-				"stateMutability": "payable",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "qualifyWeekly",
-				"outputs": [],
-				"stateMutability": "payable",
 				"type": "function"
 			},
 			{
@@ -1043,6 +1336,45 @@
 			},
 			{
 				"inputs": [],
+				"name": "topRoyaltyReward",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "topRoyaltyRound",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "topRoyaltyStartTime",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "totalUsers",
 				"outputs": [
 					{
@@ -1079,58 +1411,16 @@
 				],
 				"stateMutability": "view",
 				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "weeklyRounds",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "id",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "totalUsers",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "totalReward",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "perUserReward",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "startTime",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "endTime",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "closed",
-						"type": "bool"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
 			}
 		],
 		"devdoc": {
+			"errors": {
+				"SafeERC20FailedOperation(address)": [
+					{
+						"details": "An operation with an ERC-20 token failed."
+					}
+				]
+			},
 			"kind": "dev",
 			"methods": {},
 			"version": 1
@@ -1158,52 +1448,100 @@
 		"viaIR": true
 	},
 	"sources": {
-		"contracts/MainSystem.sol": {
-			"keccak256": "0xf3288dc57bf9fefe0f96d0d4582f19cdbadef9ae7f919fa90feaff5167aa29f5",
+		"@openzeppelin/contracts/interfaces/IERC1363.sol": {
+			"keccak256": "0xd5ea07362ab630a6a3dee4285a74cf2377044ca2e4be472755ad64d7c5d4b69d",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://b9167ce70502d373759e9f4ad23de86193ebbfa99371345fe13046007af61af9",
-				"dweb:/ipfs/QmRMmD2F2V66M4JG1kap2mJgkj5iDyfnE47Z24k5p4Qgqr"
+				"bzz-raw://da5e832b40fc5c3145d3781e2e5fa60ac2052c9d08af7e300dc8ab80c4343100",
+				"dweb:/ipfs/QmTzf7N5ZUdh5raqtzbM11yexiUoLC9z3Ws632MCuycq1d"
 			]
 		},
-		"contracts/interfaces/IERC20.sol": {
-			"keccak256": "0xa7e5d754453950a499a3cb218473edcc38ea213d79791008dea4e7f2bde73113",
+		"@openzeppelin/contracts/interfaces/IERC165.sol": {
+			"keccak256": "0x0afcb7e740d1537b252cb2676f600465ce6938398569f09ba1b9ca240dde2dfc",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://e1fb6c03bf6941a63ed5dc9853f3e0d0024403c02e887ae46ee97d51ee5c2dea",
-				"dweb:/ipfs/QmVHwjNpJwPXA6i2nqMEm39jbMGGppfh7JszXs7aWNU5n3"
+				"bzz-raw://1c299900ac4ec268d4570ecef0d697a3013cd11a6eb74e295ee3fbc945056037",
+				"dweb:/ipfs/Qmab9owJoxcA7vJT5XNayCMaUR1qxqj1NDzzisduwaJMcZ"
+			]
+		},
+		"@openzeppelin/contracts/interfaces/IERC20.sol": {
+			"keccak256": "0x1a6221315ce0307746c2c4827c125d821ee796c74a676787762f4778671d4f44",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://1bb2332a7ee26dd0b0de9b7fe266749f54820c99ab6a3bcb6f7e6b751d47ee2d",
+				"dweb:/ipfs/QmcRWpaBeCYkhy68PR3B4AgD7asuQk7PwkWxrvJbZcikLF"
+			]
+		},
+		"@openzeppelin/contracts/security/ReentrancyGuard.sol": {
+			"keccak256": "0xa535a5df777d44e945dd24aa43a11e44b024140fc340ad0dfe42acf4002aade1",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://41319e7f621f2dc3733511332c4fd032f8e32ad2aa7fd6f665c19741d9941a34",
+				"dweb:/ipfs/QmcYR3bd862GD1Bc7jwrU9bGxrhUu5na1oP964bDCu2id1"
+			]
+		},
+		"@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+			"keccak256": "0x74ed01eb66b923d0d0cfe3be84604ac04b76482a55f9dd655e1ef4d367f95bc2",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5282825a626cfe924e504274b864a652b0023591fa66f06a067b25b51ba9b303",
+				"dweb:/ipfs/QmeCfPykghhMc81VJTrHTC7sF6CRvaA1FXVq2pJhwYp1dV"
+			]
+		},
+		"@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol": {
+			"keccak256": "0x982c5cb790ab941d1e04f807120a71709d4c313ba0bfc16006447ffbd27fbbd5",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://8150ceb4ac947e8a442b2a9c017e01e880b2be2dd958f1fa9bc405f4c5a86508",
+				"dweb:/ipfs/QmbcBmFX66AY6Kbhnd5gx7zpkgqnUafo43XnmayAM7zVdB"
+			]
+		},
+		"@openzeppelin/contracts/utils/introspection/IERC165.sol": {
+			"keccak256": "0x8891738ffe910f0cf2da09566928589bf5d63f4524dd734fd9cedbac3274dd5c",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://971f954442df5c2ef5b5ebf1eb245d7105d9fbacc7386ee5c796df1d45b21617",
+				"dweb:/ipfs/QmadRjHbkicwqwwh61raUEapaVEtaLMcYbQZWs9gUkgj3u"
+			]
+		},
+		"contracts/MainSystem.sol": {
+			"keccak256": "0xef7188db8803517b5538e0491b4fb3f1ce78d2ceb93e6c7485e61fb83959d023",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://0a897e6b794ff13d9cee2728c6ad2d842400116eececeba69355a14ba3866463",
+				"dweb:/ipfs/QmPWM4Ezsp2ZJKSFuvtLfWxm7t5W6qfQUXEJobYD8dHfSB"
 			]
 		},
 		"contracts/modules/ContestRoyalty.sol": {
-			"keccak256": "0x08f7a153cd620ea6fe4f3d79339dd2027b874cf1ce466abff7a71e32d9f1e63a",
+			"keccak256": "0x246c6d11eb5e26e8de7bd41a806e43628ce9c30fa40930dc2c908a812c17dfcb",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://59cc351a98d7c0e053d754ddccf833704fff2662880bda64bd91fef917dbd346",
-				"dweb:/ipfs/QmXftVMyAnQBiYjc97NQcSo3RUshtK1HE1H7zBoWc7secT"
+				"bzz-raw://e0f2b1610dee88ecb58d401bde905faabd899ac47f4836019f384f791727dc87",
+				"dweb:/ipfs/QmUHpPK9ajk6LHS9EMWGBZ1PD7qQR98DRvg8nioWdKxbL1"
 			]
 		},
 		"contracts/modules/InfinityPool.sol": {
-			"keccak256": "0x306c1d944ef171715a2e240ad916d1728c2c9f022439da2543b506136c1b52c1",
+			"keccak256": "0x15615011ea1ded93e9e367ffa7b1e9c93811f2d71b6ebfc2b912f7c11691f4d5",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://42e9835c8ce4e2a24683653157ad66ec3ebaa63509c4bb2d9aef1d1ee89c1b4e",
-				"dweb:/ipfs/QmXoWenznXust9Gt92NFMvBdLJR4MFQ3ZMF7TitdaJxXTZ"
+				"bzz-raw://78544d4b9d88273159cc85f0fdac893d2833e0faa9a94e91ae0dff07b0a750a8",
+				"dweb:/ipfs/QmPDqrf9HzsyGw3ZZbvp1LqzkVDV9cVw7a7yiogmxyz9Kd"
 			]
 		},
 		"contracts/modules/SponsorMatrix.sol": {
-			"keccak256": "0x58e9c45b5488ca3b7d774ecbab83eb4747596a99d4a364c830c0f29924b5f25f",
+			"keccak256": "0x5ba7509e1612ca6c9c1ef9a3f88bd18b03480a5d26364a8eb1a2e4d82ad90f54",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://2b2c3e6f6f77f603061c0978168457e740420babfaa09e4a04f22d2dbb9a1e51",
-				"dweb:/ipfs/Qmd6Lk6eWntsKC3ir4Y7Wd2sFcHSzUHuwGmQ5tufwYNXF1"
+				"bzz-raw://2c92a5314974087aebc037c4ef5e1765df461f66d6ab02fcf47a5b6dd0aeecfc",
+				"dweb:/ipfs/QmehrHRShoBL9YCwTssSg6KC9eaqp2VmUvKXft2iBrLbi8"
 			]
 		},
 		"contracts/modules/Storage.sol": {
-			"keccak256": "0xba3b49e748ef80a097ff9b607fb7ceee9ba23acd1231b837908be560a2f59cea",
+			"keccak256": "0xe058c9af96ec6802b8b014b9dde4d016561840c013c1a5d2e7d7b73d2399c020",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://26f3b8efd1ce3771f72ead96513da5f3f3b5bf3528961ddef5aca7031c5e28c0",
-				"dweb:/ipfs/QmbLZDSqc3tN5S72oMKGSHHyUtCHbi5TSsCg5T6cMHd7fb"
+				"bzz-raw://8967d373363fcbed83bfcfb73433cec2c810922a8ce9dc09cdaf0b95eb621ab7",
+				"dweb:/ipfs/QmcprKH5kRxKkQnnQKvMj9u1tExLAB58xLUR4ayq5YMrku"
 			]
 		}
 	},

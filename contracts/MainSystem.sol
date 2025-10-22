@@ -59,11 +59,35 @@ contract MainSystem is Storage, ContestRoyalty, Nanakshahi {
                 id: defaultRefId,              
                 poolId: k,
                 parentId: 0,
-                bonusCount: 0
+                bonusCount: 0,
+                joinTime: block.timestamp
             });
             boosterUsers[k].push(defaultRefId);
             
         }
        creator.boosterDeposit = totalDeposit;
+
+        currentWeeklyStartTime = block.timestamp;
+        currentMonthlyStartTime = block.timestamp;
+        topRoyaltyStartTime = block.timestamp;
+
+        WeeklyTotalReward = 0;
+        currentWeeklyRound = 1;
+
+        monthlyTotalReward = 0;
+        currentMonthlyRound = 1;    
+
+        topRoyaltyReward = 0;
+        topRoyaltyRound = 1;
+
+        weeklyUser storage weeklyuserdtl = weeklyUserdtl[currentWeeklyRound][defaultRefId];
+        if (weeklyuserdtl.isQualified) return;
+        require(!weeklyuserdtl.isQualified, "already Qualified");
+
+        weeklyuserdtl.joinTime = block.timestamp;
+        weeklyuserdtl.roundId = currentWeeklyRound;
+        weeklyuserdtl.isQualified = true;
+   
+        emit WeeklyContestQualified(currentWeeklyRound, defaultRefId, block.timestamp);
     }
 }
