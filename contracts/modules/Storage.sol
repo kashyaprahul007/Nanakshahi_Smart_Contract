@@ -452,7 +452,7 @@ contract Storage is ReentrancyGuard {
         require(!weeklyuserdtl.isQualified, "already Qualified");
 
         uint nowTime = block.timestamp;
-
+        weeklyQualifiedUsers[_roundId].push(_userId);// += 1;
         weeklyuserdtl.joinTime = nowTime;
         weeklyuserdtl.roundId = _roundId;
         weeklyuserdtl.isQualified = true;
@@ -486,6 +486,7 @@ contract Storage is ReentrancyGuard {
 
         uint nowTime = block.timestamp;
         //userRoyalty.id = _userId;
+        monthlyQualifiedUsers.push(_userId);
         userRoyalty.joinTime = nowTime;
         userRoyalty.qualifiedRoundId = _roundId;
         userRoyalty.isQualified = true;
@@ -521,6 +522,7 @@ contract Storage is ReentrancyGuard {
 
         uint nowTime = block.timestamp;
         //userRoyalty.id = _userId;
+        topRoyaltyQualifiedUsers.push(_userId);
         userRoyalty.joinTime = nowTime;
         userRoyalty.qualifiedRoundId = _roundId;
         userRoyalty.isQualified = true;

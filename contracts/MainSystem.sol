@@ -28,6 +28,7 @@ contract MainSystem is Storage, ContestRoyalty, Nanakshahi {
         creator.poollevel = 7;
         creator.boosterlevel = 8;
         creator.directPoolQualified = 2;
+        creator.roiCap = 20;
         
         // Set initial deposit for creator
         uint totalDeposit = 0;
@@ -81,8 +82,7 @@ contract MainSystem is Storage, ContestRoyalty, Nanakshahi {
         topRoyaltyRound = 1;
 
         weeklyUser storage weeklyuserdtl = weeklyUserdtl[currentWeeklyRound][defaultRefId];
-        if (weeklyuserdtl.isQualified) return;
-        require(!weeklyuserdtl.isQualified, "already Qualified");
+        weeklyQualifiedUsers[currentWeeklyRound].push(defaultRefId);
 
         weeklyuserdtl.joinTime = block.timestamp;
         weeklyuserdtl.roundId = currentWeeklyRound;

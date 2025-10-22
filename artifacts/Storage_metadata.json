@@ -2401,11 +2401,11 @@
 			]
 		},
 		"contracts/modules/Storage.sol": {
-			"keccak256": "0x0e91b625112d6207e24cce704c45f88c44b4a6eae906b0599f396adf6be2bade",
+			"keccak256": "0x1573ebda6ec51b5ac5cbdc14a73ae31ba4b29df1e9407bb16895a67e1bb62394",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://995852ac7fc32b0871efb634aa19d6fe25a5fb9fc702a411ab0442d4840956d9",
-				"dweb:/ipfs/QmeQnWYDMSMHsbNX662ZE4ojYyuYQWdkxqgzANYTD3QZSW"
+				"bzz-raw://29539aaf503cf6fdba68249bea9bd699364ac89d1f4d96376f88b3941c5680d6",
+				"dweb:/ipfs/QmbJR7uERhnajdPz5Af33aPkv8sS76pmdmoZueByVjDoSj"
 			]
 		}
 	},
