@@ -43,7 +43,9 @@ contract Nanakshahi is Storage{
         directReferrals[_sponsorId].push(newUserId);
        // registeredUserIds.push(newUserId);
         
+        userPackage[newUserId][packagePrice].qualified = true; 
         packageQualifiedUsers[packagePrice] += 1;
+
         //communityDebt[newUserId] = communityAccPerUser;
          communityDebt[packagePrice][newUserId] = communityAccPerPackage[packagePrice];
         // Find placement in 2x2 matrix
@@ -96,7 +98,7 @@ contract Nanakshahi is Storage{
         
         user.level += 1;
         user.totalDeposit += packagePrice;
-       
+        userPackage[_userId][packagePrice].qualified = true;    
         // Distribute income
         uint creatorShare = packagePrice * 5 / 100; // 5% to creator
       
@@ -239,47 +241,50 @@ contract Nanakshahi is Storage{
     //         }
     //     }
 
-    function claimCommunity(uint _userId, uint packageLevel) external {
-    User storage u = users[_userId];
-    require(u.id != 0, "User not found");
-    require(u.account == msg.sender, "Not your account");
-    require(u.level == packageLevel, "Invalid package");
+    function claimCommunity(uint _userId, uint packagePrice) external {
+        User storage u = users[_userId];
+        require(u.id != 0, "User not found");
+        require(u.account == msg.sender, "Not your account");
+        
+        require(userPackage[_userId][packagePrice].qualified, "Invalid package");
+        require(!userPackage[_userId][packagePrice].closed, "Package Closed");
+   
 
-    uint256 accumulated = communityAccPerPackage[packageLevel];
-    uint256 debt = communityDebt[packageLevel][_userId];
+        uint256 accumulated = communityAccPerPackage[packagePrice];
+        uint256 debt = communityDebt[packagePrice][_userId];
 
-    if (accumulated == debt) return;
+        if (accumulated == debt) return;
 
-    uint256 accrued = (accumulated - debt) / ACC_PRECISION;
-    if (accrued == 0) {
-        communityDebt[packageLevel][_userId] = accumulated;
-        return;
+        uint256 accrued = (accumulated - debt) / ACC_PRECISION;
+        if (accrued == 0) {
+            communityDebt[packagePrice][_userId] = accumulated;
+            return;
+        }
+
+        uint256 pay = _applyGlobalCapping(_userId, accrued);
+
+        communityDebt[packagePrice][_userId] = accumulated;
+
+        if (pay > 0) {
+            // UserIncome storage inc = userIncomes[_userId];
+            // inc.totalIncome += pay;
+            // inc.communityIncome += pay;
+            // incomeHistory[_userId].push(Income({
+            //     fromUserId: _userId,
+            //     amount: pay,
+            //     packageLevel: packageLevel,
+            //     timestamp: block.timestamp,
+            //     incomeType: 9
+            // }));
+
+            _distributeIncome(_userId, _userId, pay, packagePrice, IncomeType.Community);
+            //require(usdt.transfer(u.account, pay), "USDT transfer failed");
+        }
+
+        if (accrued > pay) {
+            _sendToCreator(accrued - pay);
+        }
     }
-
-    uint256 pay = _applyGlobalCapping(_userId, accrued);
-
-    communityDebt[packageLevel][_userId] = accumulated;
-
-    if (pay > 0) {
-        // UserIncome storage inc = userIncomes[_userId];
-        // inc.totalIncome += pay;
-        // inc.communityIncome += pay;
-        // incomeHistory[_userId].push(Income({
-        //     fromUserId: _userId,
-        //     amount: pay,
-        //     packageLevel: packageLevel,
-        //     timestamp: block.timestamp,
-        //     incomeType: 9
-        // }));
-
-        _distributeIncome(_userId, _userId, pay, packageLevel, IncomeType.Community);
-        //require(usdt.transfer(u.account, pay), "USDT transfer failed");
-    }
-
-    if (accrued > pay) {
-        _sendToCreator(accrued - pay);
-    }
-}
 
 
 

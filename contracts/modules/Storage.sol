@@ -129,7 +129,8 @@ contract Storage is ReentrancyGuard {
     struct UserPackage{       
         uint roiCap;
         uint currentIncome; 
-        uint closingAmount;    
+        uint closingAmount; 
+        bool qualified;   
         bool closed;
        
     }
@@ -413,6 +414,7 @@ contract Storage is ReentrancyGuard {
                 pkg.closingAmount = (packagePrice * ROICap) / ROI_CAP_DIVIDER;
                 pkg.roiCap = ROICap;
                 totalIncome -= pkg.closingAmount;
+                packageQualifiedUsers[packagePrice] -= 1;
             }else if (pkg.closed && totalIncome > (packagePrice * ROICap) / ROI_CAP_DIVIDER){
                  totalIncome -= pkg.closingAmount;
             }else if (!pkg.closed && totalIncome < (packagePrice * ROICap) / ROI_CAP_DIVIDER) {
