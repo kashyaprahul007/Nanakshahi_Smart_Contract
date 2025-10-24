@@ -59,11 +59,12 @@ contract Nanakshahi is Storage{
         //     depositType:1
         // }));
         // Distribute income
-       
+      
         uint creatorShare = packagePrice * 5 / 100; // 5% to creator
         uint remainingAmount = packagePrice * 60 / 100;    // 60% distributable
         /*5 %  for weekly Contest and Roaylty */
 
+        _closeContestRoyalty();
         WeeklyTotalReward +=  packagePrice * 5 / 100;
         monthlyTotalReward +=  packagePrice * 35 / 1000;
         topRoyaltyReward +=  packagePrice * 15 / 1000;
@@ -102,7 +103,7 @@ contract Nanakshahi is Storage{
         // Distribute income
         uint creatorShare = packagePrice * 5 / 100; // 5% to creator
       
-         uint communityShare = packagePrice * 25 / 100;
+        uint communityShare = packagePrice * 25 / 100;
         _accrueCommunityBonus(communityShare, packagePrice);
 
         communityDebt[packagePrice][_userId] = communityAccPerPackage[packagePrice];
@@ -120,6 +121,7 @@ contract Nanakshahi is Storage{
         uint boosterIncome = packagePrice * 20 / 100;
         _distributeLevelBoosterIncome(user.uplineId, _userId, boosterIncome, nextLevel + 1, nextLevel);
 
+        _closeContestRoyalty();
         WeeklyTotalReward +=  packagePrice * 5 / 100;
         monthlyTotalReward +=  packagePrice * 35 / 1000;
         topRoyaltyReward +=  packagePrice * 15 / 1000;

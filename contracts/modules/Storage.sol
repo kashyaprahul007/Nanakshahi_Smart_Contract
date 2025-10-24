@@ -196,7 +196,7 @@ contract Storage is ReentrancyGuard {
     }
     
     struct UserPoolTopup{
-         uint nextPoolAmt;       
+        uint nextPoolAmt;       
         uint reTopupAmt;     
     }
 
@@ -530,6 +530,158 @@ contract Storage is ReentrancyGuard {
         userRoyalty.isQualified = true;
    
         emit MonthlyRoyaltyQualified(_roundId, _userId, nowTime);
+    }
+
+    function _closeTopRoyalty() internal {
+        
+        if (block.timestamp < topRoyaltyStartTime + MONTH_DURATION) return;
+        uint currentRound = topRoyaltyRound;
+        topRoyalty storage curentTopRoyalty = topRoyaltydtl[currentRound];
+
+        // Prevent double closing
+        // if (curentMonthRoyalty.endTime > 0 && block.timestamp < curentMonthRoyalty.endTime) {
+        //     return;
+        // }
+        if (curentTopRoyalty.closed) return;
+        uint qualifiedCount = topRoyaltyQualifiedUsers.length;
+        uint perUserReward;
+        uint distributedAmount;
+        uint leftover;
+
+        if (qualifiedCount > 0) {
+            // Calculate reward distribution              
+            
+            perUserReward = topRoyaltyReward / qualifiedCount;
+            distributedAmount = perUserReward * qualifiedCount;
+            leftover = topRoyaltyReward - distributedAmount;
+        } else {
+            // No qualified users → carry forward all
+            leftover = topRoyaltyReward;
+            distributedAmount = 0;
+            perUserReward = 0;
+        }
+
+        // Store round data
+        curentTopRoyalty.roundId = currentRound;
+        curentTopRoyalty.perUserReward = perUserReward;
+        curentTopRoyalty.totalUsers = qualifiedCount;
+        curentTopRoyalty.totalReward = topRoyaltyReward;//distributedAmount;
+        curentTopRoyalty.carryForward = leftover;
+        curentTopRoyalty.endTime = topRoyaltyStartTime + MONTH_DURATION;
+        curentTopRoyalty.closed = true;
+
+        // Prepare next round
+        topRoyaltyStartTime = curentTopRoyalty.endTime;
+        topRoyaltyRound = currentRound + 1;
+        topRoyaltyReward = leftover; // carry forward
+
+        emit TopRoyaltyClosed(currentRound, qualifiedCount, perUserReward,  distributedAmount+leftover, distributedAmount, leftover, curentTopRoyalty.endTime);
+        
+    }
+
+      
+    function _closeMonthlyRoyalty() internal {
+        
+        if (block.timestamp >= (currentMonthlyStartTime + MONTH_DURATION)) {
+            uint currentRound = currentMonthlyRound;
+            monthlyRoyalty storage curentMonthRoyalty = monthlyRoyaltydtl[currentRound];
+
+            // Prevent double closing
+            // if (curentMonthRoyalty.endTime > 0 && block.timestamp < curentMonthRoyalty.endTime) {
+            //     return;
+            // }
+            if (curentMonthRoyalty.closed) return;
+            uint qualifiedCount = monthlyQualifiedUsers.length;
+            uint perUserReward;
+            uint distributedAmount;
+            uint leftover;
+
+            if (qualifiedCount > 0) {
+                // Calculate reward distribution
+                uint rawReward = monthlyTotalReward / qualifiedCount;
+                perUserReward = (rawReward > monthlyCapping) ? monthlyCapping : rawReward;
+                distributedAmount = perUserReward * qualifiedCount;
+                leftover = (monthlyTotalReward > distributedAmount) ? monthlyTotalReward - distributedAmount : 0;
+            } else {
+                // No qualified users → carry forward all
+                leftover = monthlyTotalReward;
+                distributedAmount = 0;
+                perUserReward = 0;
+            }
+
+            // Store round data
+            curentMonthRoyalty.roundId = currentRound;
+            curentMonthRoyalty.perUserReward = perUserReward;
+            curentMonthRoyalty.totalUsers = qualifiedCount;
+            curentMonthRoyalty.totalReward = monthlyTotalReward;//distributedAmount;
+            curentMonthRoyalty.carryForward = leftover;
+            curentMonthRoyalty.endTime = currentMonthlyStartTime + MONTH_DURATION;
+            curentMonthRoyalty.closed = true;
+
+            // Prepare next round
+            currentMonthlyStartTime = curentMonthRoyalty.endTime;
+            currentMonthlyRound = currentRound + 1;
+            monthlyTotalReward = leftover; // carry forward
+
+            emit MonthlyClosed(currentRound, qualifiedCount, perUserReward,  distributedAmount+leftover, distributedAmount, leftover, curentMonthRoyalty.endTime);
+        }
+    } 
+
+
+    function _closeWeeklyContest() internal {
+        
+        if (block.timestamp >= (currentWeeklyStartTime + WEEK_DURATION)) {
+            uint currentRound = currentWeeklyRound;
+            WeeklyContest storage curentWeekContest = weeklyContestdtl[currentRound];
+
+            // Prevent double closing
+            // if (curentWeekContest.endTime > 0 && block.timestamp < curentWeekContest.endTime) {
+            //     return;
+            // }
+            if (curentWeekContest.closed) return;
+
+            uint qualifiedCount = weeklyQualifiedUsers[currentRound].length;
+            uint perUserReward;
+            uint distributedAmount;
+            uint leftover;
+
+            if (qualifiedCount > 0) {
+                // Calculate reward distribution
+                uint rawReward = WeeklyTotalReward / qualifiedCount;
+                perUserReward = (rawReward > WeeklyCapping) ? WeeklyCapping : rawReward;
+                distributedAmount = perUserReward * qualifiedCount;
+                leftover = (WeeklyTotalReward > distributedAmount) ? WeeklyTotalReward - distributedAmount : 0;
+            } else {
+                // No qualified users → carry forward all
+                leftover = WeeklyTotalReward;
+                distributedAmount = 0;
+                perUserReward = 0;
+            }
+
+            // Store round data
+            curentWeekContest.roundId = currentRound;
+            curentWeekContest.perUserReward = perUserReward;
+            curentWeekContest.totalUsers = qualifiedCount;
+            curentWeekContest.totalReward = WeeklyTotalReward;//distributedAmount;
+            curentWeekContest.carryForward = leftover;
+            curentWeekContest.endTime = currentWeeklyStartTime + WEEK_DURATION;
+            curentWeekContest.closed = true;
+
+            // Prepare next round
+            currentWeeklyStartTime = curentWeekContest.endTime;
+            currentWeeklyRound = currentRound + 1;
+            WeeklyTotalReward = leftover; // carry forward
+
+             emit WeeklyClosed(currentRound, qualifiedCount, perUserReward,  distributedAmount+leftover, distributedAmount, leftover, curentWeekContest.endTime);
+        }
+    }   
+
+
+    function _closeContestRoyalty() internal {
+       
+       _closeWeeklyContest();
+        _closeMonthlyRoyalty();
+        _closeTopRoyalty();
     }
 
 }

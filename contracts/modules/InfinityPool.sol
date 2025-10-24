@@ -113,7 +113,7 @@
         //     start: block.timestamp,
         //     depositType: 11 // Upgrade via earning
         // }));
-
+        _closeContestRoyalty();
         emit Upgrade(msg.sender, _userId, targetPool + 1, packagePrice, "Pool Upgrade (Earning)", block.timestamp);
     
     }
@@ -172,7 +172,7 @@
         //     start: block.timestamp,
         //     depositType:10
         // }));
-
+        _closeContestRoyalty();
         emit Upgrade(msg.sender, _userId, nextPool + 1, packagePrice, "Pool", nowTime);
     }
 
@@ -312,7 +312,7 @@
         //     start: block.timestamp,
         //     depositType:11
         // }));
-
+        _closeContestRoyalty();
         emit Upgrade(msg.sender, _userId, nextPool + 1, packagePrice, "Booster", block.timestamp);
     }
 

@@ -2049,6 +2049,11 @@
 					},
 					{
 						"internalType": "bool",
+						"name": "qualified",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
 						"name": "closed",
 						"type": "bool"
 					}
@@ -2497,19 +2502,19 @@
 			]
 		},
 		"contracts/modules/ContestRoyalty.sol": {
-			"keccak256": "0x246c6d11eb5e26e8de7bd41a806e43628ce9c30fa40930dc2c908a812c17dfcb",
+			"keccak256": "0x43596da7aa1ee61f65516d3160ed3e8d7b0507de290009a0c76a6775fe4674c0",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://e0f2b1610dee88ecb58d401bde905faabd899ac47f4836019f384f791727dc87",
-				"dweb:/ipfs/QmUHpPK9ajk6LHS9EMWGBZ1PD7qQR98DRvg8nioWdKxbL1"
+				"bzz-raw://487fcc3a9c6528bdb534df9bafbad20754a8d6a8e3e8949954a7b344f5882aff",
+				"dweb:/ipfs/QmPDwKEEuZVhSsf69qyzCLFGkbjLSoMvR5jVt15mtircjd"
 			]
 		},
 		"contracts/modules/Storage.sol": {
-			"keccak256": "0x1573ebda6ec51b5ac5cbdc14a73ae31ba4b29df1e9407bb16895a67e1bb62394",
+			"keccak256": "0xb73e6f407dfb641180ff3b3bb06ae806a1a607f2c0dc9fadf3f96206f0addab6",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://29539aaf503cf6fdba68249bea9bd699364ac89d1f4d96376f88b3941c5680d6",
-				"dweb:/ipfs/QmbJR7uERhnajdPz5Af33aPkv8sS76pmdmoZueByVjDoSj"
+				"bzz-raw://148ccaefd0b8fa95b6424a2c4b057de63cfefdd482b7710460d306a18e3a1072",
+				"dweb:/ipfs/QmZyxUXZ6NhZ9EVnbicaMaFcNBEBj2fUpTQNd3mSyB1Dcb"
 			]
 		}
 	},

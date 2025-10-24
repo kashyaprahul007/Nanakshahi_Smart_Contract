@@ -1960,6 +1960,11 @@
 					},
 					{
 						"internalType": "bool",
+						"name": "qualified",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
 						"name": "closed",
 						"type": "bool"
 					}
@@ -2401,11 +2406,11 @@
 			]
 		},
 		"contracts/modules/Storage.sol": {
-			"keccak256": "0x1573ebda6ec51b5ac5cbdc14a73ae31ba4b29df1e9407bb16895a67e1bb62394",
+			"keccak256": "0x87736dbc034484ef64f66212d6cadbaa45fb5cac1cc9a42308dc3794bf61a66f",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://29539aaf503cf6fdba68249bea9bd699364ac89d1f4d96376f88b3941c5680d6",
-				"dweb:/ipfs/QmbJR7uERhnajdPz5Af33aPkv8sS76pmdmoZueByVjDoSj"
+				"bzz-raw://c8f5b00d3028c62a570154ddc65b0b60c87c909ca4a19295882e69947943adb9",
+				"dweb:/ipfs/QmRKqQHSbXV8hYYVxCp5e96MUPND5ccX14CEJxB1vkBpfs"
 			]
 		}
 	},
